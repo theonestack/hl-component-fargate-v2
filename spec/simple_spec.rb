@@ -88,7 +88,7 @@ describe 'compiled component' do
 
   context 'Resource Service' do
 
-    let(:properties) { template["Resources"]["Service"]["Properties"] }
+    let(:properties) { template["Resources"]["EcsFargateService"]["Properties"] }
 
     it 'has property Cluster' do
       expect(properties["Cluster"]).to eq({"Ref"=>"EcsCluster"})
@@ -110,7 +110,7 @@ describe 'compiled component' do
     end
 
     it 'has property TaskDefinition' do
-      expect(properties["TaskDefinition"]).to eq({"Fn::Sub"=>"${Task}"})
+      expect(properties["TaskDefinition"]).to eq({"Ref"=>"Task"})
     end
 
     it 'has property NetworkConfiguration' do

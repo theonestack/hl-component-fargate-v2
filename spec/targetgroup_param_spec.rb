@@ -25,7 +25,7 @@ describe 'compiled component' do
 
     context 'Resource TargetRule' do
 
-      let(:loadbalancer) { template["Resources"]["Service"]["Properties"]["LoadBalancers"] }
+      let(:loadbalancer) { template["Resources"]["EcsFargateService"]["Properties"]["LoadBalancers"] }
   
       it 'has property Properties' do
         expect(loadbalancer).to eq([{
