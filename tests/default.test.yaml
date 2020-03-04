@@ -1,0 +1,6 @@
+
+test_metadata:
+  type: config
+  name: default
+  description: default config test
+

@@ -1,0 +1,10 @@
+
+test_metadata:
+  type: config
+  name: simple
+  description: minimal task
+
+task_definition:
+  proxy:
+    image: nginx
+

@@ -1,0 +1,12 @@
+language: ruby
+rvm:
+  - 2.5
+install:
+  - gem install cfhighlander cfn-nag rspec
+  - pip install --user cfn-lint
+before_script:
+  - cfndsl -u 9.0.0
+script:
+  - rspec
+  - cfn_nag_scan -i out/tests
+  - cfn-lint out/tests/**/*.yaml -i W1020
