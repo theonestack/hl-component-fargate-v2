@@ -1,0 +1,16 @@
+
+test_metadata:
+  type: config
+  name: targetgroup_param
+  description: Pass TargetGroup as a parameter
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+targetgroup:
+  name: web
+  container: nginx
+  port: 80
