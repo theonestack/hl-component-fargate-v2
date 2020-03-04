@@ -1,0 +1,37 @@
+
+test_metadata:
+  type: config
+  name: security_groups
+  description: configuring service security groups
+
+test_parameters:
+  MySecurityGroup : sg-123
+  OtherSecurityGroup: sg-xyz
+
+task_definition:
+  proxy:
+    image: nginx
+
+ingress_rules:
+  -
+    from: 80
+    source_sg: 
+      Ref: MySecurityGroup
+    desc: allows traffic from an existing SG to this service
+  -
+    from: 1433
+    dest_sg: 
+      Ref: OtherSecurityGroup
+    desc: allows traffic from this service to another SG
+  -
+    from: 1024
+    to: 9999
+    source_sg: 
+      Ref: MySecurityGroup
+    dest_sg: 
+      Ref: SecurityGroup
+    desc: allows traffic from one SG to another
+
+
+
+

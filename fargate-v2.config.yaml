@@ -11,5 +11,3 @@ iam_policies:
       - Fn::GetAtt: 
           - LogGroup
           - Arn
-
-

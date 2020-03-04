@@ -16,6 +16,18 @@ CloudFormation do
     Export FnSub("${EnvironmentName}-#{export}-SecurityGroup")
   }
 
+  ingress_rules = external_parameters.fetch(:ingress_rules, [])
+  ingress_rules.each_with_index do |ingress_rule, i|
+    EC2_SecurityGroupIngress("IngressRule#{i+1}") do
+      Description ingress_rule['desc'] if ingress_rule.has_key?('desc')
+      GroupId ingress_rule.has_key?('dest_sg') ? ingress_rule['dest_sg'] : Ref(:SecurityGroup)
+      SourceSecurityGroupId ingress_rule.has_key?('source_sg') ? ingress_rule['source_sg'] :  Ref(:SecurityGroup)
+      IpProtocol ingress_rule.has_key?('protocol') ? ingress_rule['protocol'] : 'tcp'
+      FromPort ingress_rule['from']
+      ToPort ingress_rule.has_key?('to') ? ingress_rule['to'] : ingress_rule['from']
+    end
+  end
+
   service_loadbalancer = []
   targetgroup = external_parameters.fetch(:targetgroup, {})
   unless targetgroup.empty?
@@ -108,14 +120,14 @@ CloudFormation do
   health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)
   unless task_definition.empty?
 
-    ECS_Service('Service') do
+    ECS_Service('EcsFargateService') do
       Cluster Ref("EcsCluster")
       DesiredCount Ref('DesiredCount')
       DeploymentConfiguration ({
           MinimumHealthyPercent: Ref('MinimumHealthyPercent'),
           MaximumPercent: Ref('MaximumPercent')
       })
-      TaskDefinition FnSub("${Task}")
+      TaskDefinition "Ref" => "Task" #Hack to work referencing child component resource
       HealthCheckGracePeriodSeconds health_check_grace_period unless health_check_grace_period.nil?
       LaunchType "FARGATE"
 
@@ -134,7 +146,7 @@ CloudFormation do
     end
 
     Output('ServiceName') do
-      Value(FnGetAtt('Service', 'Name'))
+      Value(FnGetAtt('EcsFargateService', 'Name'))
       Export FnSub("${EnvironmentName}-#{export}-ServiceName")
     end
   end
