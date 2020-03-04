@@ -1,0 +1,23 @@
+
+test_metadata:
+  type: config
+  name: alb
+  description: Application Load Balancer task
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+targetgroup:
+  name: web
+  type: ip
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  rules:
+    -
+      host: www.*
+      priority: 10

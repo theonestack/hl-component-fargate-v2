@@ -14,7 +14,7 @@ CfhighlanderTemplate do
 
     if defined? targetgroup
       ComponentParam 'LoadBalancer'
-      ComponentParam 'TargetGroup'
+      ComponentParam 'TargetGroup' unless targetgroup.has_key?('rules')
       ComponentParam 'Listener'
       ComponentParam 'DnsDomain', isGlobal: true
     end
