@@ -47,7 +47,7 @@ describe 'compiled component' do
 
     it 'has property Tags' do
       expect(properties["Tags"]).to eq([
-        {"Key"=>"Name", "Value"=>"fargatetask"}, 
+        {"Key"=>"Name", "Value"=>"fargatev2FargateTask"}, 
         {"Key"=>"Environment", "Value"=>{"Ref"=>"EnvironmentName"}}, 
         {"Key"=>"EnvironmentType", "Value"=>{"Ref"=>"EnvironmentType"}}])
     end
@@ -190,5 +190,16 @@ describe 'compiled component' do
 
   end
 
+  context 'Resource Outputs' do
+
+    let(:outputs) { template["Outputs"] }
+
+    it 'has component_name as part of the export' do
+      expect(outputs['EcsTaskArn']).to eq({
+        "Export"=>{"Name"=>{"Fn::Sub"=>"${EnvironmentName}-fargatev2FargateTask-EcsTaskArn"}},
+        "Value"=>{"Ref"=>"Task"}
+      })
+    end
+  end 
 
 end
