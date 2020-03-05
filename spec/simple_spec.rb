@@ -86,6 +86,71 @@ describe 'compiled component' do
 
   end
 
+  context 'Resource ExecutionRole' do
+
+    let(:properties) { template["Resources"]["ExecutionRole"]['Properties'] }
+
+    it 'has ManagedPolicyArns' do
+      expect(properties["ManagedPolicyArns"]).to eq(["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"])
+    end
+
+    it 'has AssumeRolePolicyDocument' do
+      expect(properties["AssumeRolePolicyDocument"]).to eq({
+        "Statement"=>[
+          {
+            "Action"=>"sts:AssumeRole", 
+            "Effect"=>"Allow", 
+            "Principal"=>{"Service"=>"ecs-tasks.amazonaws.com"}
+          },
+          {
+            "Action"=>"sts:AssumeRole", 
+            "Effect"=>"Allow", 
+            "Principal"=>{"Service"=>"ssm.amazonaws.com"}
+          }
+        ], 
+        "Version"=>"2012-10-17"
+      })
+    end
+
+  end
+
+  context 'Resource TaskRole' do
+
+    let(:properties) { template["Resources"]["TaskRole"]['Properties'] }
+
+    it 'has AssumeRolePolicyDocument' do
+      expect(properties["AssumeRolePolicyDocument"]).to eq({
+        "Statement"=>[
+          {
+            "Action"=>["sts:AssumeRole"],
+            "Effect"=>"Allow",
+            "Principal"=>{"Service"=>["ecs-tasks.amazonaws.com"]}
+          },
+          {
+            "Action"=>["sts:AssumeRole"],
+            "Effect"=>"Allow",
+            "Principal"=>{"Service"=>["ssm.amazonaws.com"]}
+          }
+        ]
+      })
+    end
+
+    it 'has Polices' do
+      expect(properties["Policies"]).to eq([{
+        "PolicyDocument"=>{
+          "Statement"=>[{
+            "Action"=>["logs:GetLogEvents"],
+            "Effect"=>"Allow",
+            "Resource"=>[{"Fn::GetAtt"=>["LogGroup", "Arn"]}],
+            "Sid"=>"fargatedefaultpolicy"}
+          ]},
+          "PolicyName"=>"fargate_default_policy"
+        }]
+      )
+    end
+
+  end
+
   context 'Resource Service' do
 
     let(:properties) { template["Resources"]["EcsFargateService"]["Properties"] }

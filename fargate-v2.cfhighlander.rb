@@ -26,6 +26,6 @@ CfhighlanderTemplate do
   end
 
   #Pass the all the config from the parent component to the inlined component
-  Component template: 'ecs-task@0.3.2', name: 'fargatetask', render: Inline, config: @config
+  Component template: 'ecs-task@secrets', name: 'fargatetask', render: Inline, config: @config
 
 end
