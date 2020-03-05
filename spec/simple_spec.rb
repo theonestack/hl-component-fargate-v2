@@ -47,7 +47,7 @@ describe 'compiled component' do
 
     it 'has property Tags' do
       expect(properties["Tags"]).to eq([
-        {"Key"=>"Name", "Value"=>"fargatev2"}, 
+        {"Key"=>"Name", "Value"=>"fargatev2Task"}, 
         {"Key"=>"Environment", "Value"=>{"Ref"=>"EnvironmentName"}}, 
         {"Key"=>"EnvironmentType", "Value"=>{"Ref"=>"EnvironmentType"}}])
     end
@@ -196,7 +196,7 @@ describe 'compiled component' do
 
     it 'has component_name as part of the export' do
       expect(outputs['EcsTaskArn']).to eq({
-        "Export"=>{"Name"=>{"Fn::Sub"=>"${EnvironmentName}-fargatev2-EcsTaskArn"}},
+        "Export"=>{"Name"=>{"Fn::Sub"=>"${EnvironmentName}-fargatev2Task-EcsTaskArn"}},
         "Value"=>{"Ref"=>"Task"}
       })
     end
