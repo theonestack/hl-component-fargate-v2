@@ -10,6 +10,13 @@ CloudFormation do
   EC2_SecurityGroup(:SecurityGroup) do
     VpcId Ref('VPCId')
     GroupDescription "#{external_parameters[:component_name]} fargate service"
+    Metadata({
+      cfn_nag: {
+        rules_to_suppress: [
+          { id: 'F1000', reason: 'ignore egress for now' }
+        ]
+      }
+    })
   end
   Output(:SecurityGroup) {
     Value(Ref(:SecurityGroup))
