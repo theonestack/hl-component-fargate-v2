@@ -4,6 +4,7 @@ test_metadata:
   name: simple
   description: minimal task
 
+platform_version: '1.4.0'
 task_definition:
   proxy:
     image: nginx
