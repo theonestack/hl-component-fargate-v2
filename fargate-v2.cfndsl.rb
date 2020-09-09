@@ -133,10 +133,12 @@ CloudFormation do
   end
 
   health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)
+  platform_version = external_parameters.fetch(:platform_version, nil)
   unless task_definition.empty?
 
     ECS_Service('EcsFargateService') do
       Cluster Ref("EcsCluster")
+      PlatformVersion platform_version unless platform_version.nil?
       DesiredCount Ref('DesiredCount')
       DeploymentConfiguration ({
           MinimumHealthyPercent: Ref('MinimumHealthyPercent'),
