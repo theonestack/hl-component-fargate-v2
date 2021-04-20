@@ -134,16 +134,21 @@ CloudFormation do
 
   health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)
   platform_version = external_parameters.fetch(:platform_version, nil)
+  deployment_circuit_breaker = external_parameters.fetch(:deployment_circuit_breaker, {}).transform_keys {|k| k.split('_').collect(&:capitalize).join }
+  deployment_configuration = {
+    MinimumHealthyPercent: Ref('MinimumHealthyPercent'),
+    MaximumPercent: Ref('MaximumPercent')
+  }
+  unless deployment_circuit_breaker.empty?
+    deployment_configuration['DeploymentCircuitBreaker'] = deployment_circuit_breaker 
+  end
   unless task_definition.empty?
 
     ECS_Service('EcsFargateService') do
       Cluster Ref("EcsCluster")
       PlatformVersion platform_version unless platform_version.nil?
       DesiredCount Ref('DesiredCount')
-      DeploymentConfiguration ({
-          MinimumHealthyPercent: Ref('MinimumHealthyPercent'),
-          MaximumPercent: Ref('MaximumPercent')
-      })
+      DeploymentConfiguration deployment_configuration
       EnableExecuteCommand external_parameters.fetch(:enable_execute_command, false)
       TaskDefinition "Ref" => "Task" #Hack to work referencing child component resource
       HealthCheckGracePeriodSeconds health_check_grace_period unless health_check_grace_period.nil?

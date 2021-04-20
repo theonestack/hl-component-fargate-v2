@@ -1,0 +1,14 @@
+
+test_metadata:
+  type: config
+  name: circuit_breaker
+  description: minimal task
+
+platform_version: '1.4.0'
+task_definition:
+  proxy:
+    image: nginx
+
+deployment_circuit_breaker:
+  enable: true
+  rollback: true
