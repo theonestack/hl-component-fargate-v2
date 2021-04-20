@@ -36,100 +36,130 @@ CloudFormation do
   end
 
   service_loadbalancer = []
-  targetgroup = external_parameters.fetch(:targetgroup, {})
-  unless targetgroup.empty?
+  targetgroups = external_parameters.fetch(:targetgroup, {})
+  multiplie_target_groups =  targetgroups.is_a?(Array)
+  unless targetgroups.empty?
 
-    if targetgroup.has_key?('rules')
-
-      attributes = []
-
-      targetgroup['attributes'].each do |key,value|
-        attributes << { Key: key, Value: value }
-      end if targetgroup.has_key?('attributes')
-
-      tags = []
-      tags << { Key: "Environment", Value: Ref("EnvironmentName") }
-      tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
-
-      targetgroup['tags'].each do |key,value|
-        tags << { Key: key, Value: value }
-      end if targetgroup.has_key?('tags')
-
-      ElasticLoadBalancingV2_TargetGroup('TaskTargetGroup') do
-        ## Required
-        Port targetgroup['port']
-        Protocol targetgroup['protocol'].upcase
-        VpcId Ref('VPCId')
-        ## Optional
-        if targetgroup.has_key?('healthcheck')
-          HealthCheckPort targetgroup['healthcheck']['port'] if targetgroup['healthcheck'].has_key?('port')
-          HealthCheckProtocol targetgroup['healthcheck']['protocol'] if targetgroup['healthcheck'].has_key?('port')
-          HealthCheckIntervalSeconds targetgroup['healthcheck']['interval'] if targetgroup['healthcheck'].has_key?('interval')
-          HealthCheckTimeoutSeconds targetgroup['healthcheck']['timeout'] if targetgroup['healthcheck'].has_key?('timeout')
-          HealthyThresholdCount targetgroup['healthcheck']['heathy_count'] if targetgroup['healthcheck'].has_key?('heathy_count')
-          UnhealthyThresholdCount targetgroup['healthcheck']['unheathy_count'] if targetgroup['healthcheck'].has_key?('unheathy_count')
-          HealthCheckPath targetgroup['healthcheck']['path'] if targetgroup['healthcheck'].has_key?('path')
-          Matcher ({ HttpCode: targetgroup['healthcheck']['code'] }) if targetgroup['healthcheck'].has_key?('code')
-        end
-
-        TargetType targetgroup['type'] if targetgroup.has_key?('type')
-        TargetGroupAttributes attributes if attributes.any?
-
-        Tags tags if tags.any?
+    if multiplie_target_groups
+      # Generate resource names based upon the target group name and the listener and suffix with resource type
+      targetgroups.each do |tg| 
+        tg['resource_name'] = "#{tg['name'].gsub(/[^0-9A-Za-z]/, '')}TargetGroup"
+        tg['listener_resource'] = "#{tg['listener']}Listener"
       end
-
-      targetgroup['rules'].each_with_index do |rule, index|
-        listener_conditions = []
-        if rule.key?("path")
-          listener_conditions << { Field: "path-pattern", Values: [ rule["path"] ].flatten() }
-        end
-        if rule.key?("host")
-          hosts = []
-          if rule["host"].include?('!DNSDomain')
-            host_subdomain = rule["host"].gsub('!DNSDomain', '') #remove <DNSDomain>
-            hosts << FnJoin("", [ host_subdomain , Ref('DnsDomain') ])
-          elsif rule["host"].include?('.')
-            hosts << rule["host"]
-          else
-            hosts << FnJoin("", [ rule["host"], ".", Ref('DnsDomain') ])
-          end
-          listener_conditions << { Field: "host-header", Values: hosts }
-        end
-
-        if rule.key?("name")
-          rule_name = rule['name']
-        elsif rule['priority'].is_a? Integer
-          rule_name = "TargetRule#{rule['priority']}"
-        else
-          rule_name = "TargetRule#{index}"
-        end
-
-        ElasticLoadBalancingV2_ListenerRule(rule_name) do
-          Actions [{ Type: "forward", TargetGroupArn: Ref('TaskTargetGroup') }]
-          Conditions listener_conditions
-          ListenerArn Ref("Listener")
-          Priority rule['priority']
-        end
-
-      end
-
-      targetgroup_arn = Ref('TaskTargetGroup')
-
-      Output("TaskTargetGroup") {
-        Value(Ref('TaskTargetGroup'))
-        Export FnSub("${EnvironmentName}-#{export}-targetgroup")
-      }
     else
-      targetgroup_arn = Ref('TargetGroup')
+      # Keep original resource names for backwards compatibility
+      targetgroups['resource_name'] = targetgroup.has_key?('rules') ? 'TaskTargetGroup' : 'TargetGroup'
+      targetgroups['listener_resource'] = 'Listener'
+      targetgroups = [targetgroups]
+    end
+
+    targetgroups.each do |targetgroup|
+      if targetgroup.has_key?('rules')
+
+        attributes = []
+
+        targetgroup['attributes'].each do |key,value|
+          attributes << { Key: key, Value: value }
+        end if targetgroup.has_key?('attributes')
+
+        tags = []
+        tags << { Key: "Environment", Value: Ref("EnvironmentName") }
+        tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
+
+        targetgroup['tags'].each do |key,value|
+          tags << { Key: key, Value: value }
+        end if targetgroup.has_key?('tags')
+
+        ElasticLoadBalancingV2_TargetGroup(targetgroup['resource_name']) do
+          ## Required
+          Port targetgroup['port']
+          Protocol targetgroup['protocol'].upcase
+          VpcId Ref('VPCId')
+          ## Optional
+          if targetgroup.has_key?('healthcheck')
+            HealthCheckPort targetgroup['healthcheck']['port'] if targetgroup['healthcheck'].has_key?('port')
+            HealthCheckProtocol targetgroup['healthcheck']['protocol'] if targetgroup['healthcheck'].has_key?('port')
+            HealthCheckIntervalSeconds targetgroup['healthcheck']['interval'] if targetgroup['healthcheck'].has_key?('interval')
+            HealthCheckTimeoutSeconds targetgroup['healthcheck']['timeout'] if targetgroup['healthcheck'].has_key?('timeout')
+            HealthyThresholdCount targetgroup['healthcheck']['heathy_count'] if targetgroup['healthcheck'].has_key?('heathy_count')
+            UnhealthyThresholdCount targetgroup['healthcheck']['unheathy_count'] if targetgroup['healthcheck'].has_key?('unheathy_count')
+            HealthCheckPath targetgroup['healthcheck']['path'] if targetgroup['healthcheck'].has_key?('path')
+            Matcher ({ HttpCode: targetgroup['healthcheck']['code'] }) if targetgroup['healthcheck'].has_key?('code')
+          end
+
+          TargetType targetgroup['type'] if targetgroup.has_key?('type')
+          TargetGroupAttributes attributes if attributes.any?
+
+          Tags tags if tags.any?
+        end
+
+        targetgroup['rules'].each_with_index do |rule, index|
+          listener_conditions = []
+          if rule.key?("path")
+            listener_conditions << { Field: "path-pattern", Values: [ rule["path"] ].flatten() }
+          end
+          if rule.key?("host")
+            hosts = []
+            if rule["host"].include?('!DNSDomain')
+              host_subdomain = rule["host"].gsub('!DNSDomain', '') #remove <DNSDomain>
+              hosts << FnJoin("", [ host_subdomain , Ref('DnsDomain') ])
+            elsif rule["host"].include?('.')
+              hosts << rule["host"]
+            else
+              hosts << FnJoin("", [ rule["host"], ".", Ref('DnsDomain') ])
+            end
+            listener_conditions << { Field: "host-header", Values: hosts }
+          end
+
+          if rule.key?("name")
+            rule_name = rule['name']
+          elsif rule['priority'].is_a? Integer
+            if multiplie_target_groups
+              rule_name = "#{targetgroup['name']}TargetRule#{rule['priority']}"
+            else 
+              rule_name = "TargetRule#{rule['priority']}"
+            end
+          else
+            if multiplie_target_groups
+              rule_name = "#{targetgroup['name']}TargetRule#{index}"
+            else
+              rule_name = "TargetRule#{index}"
+            end
+          end
+
+          ElasticLoadBalancingV2_ListenerRule(rule_name) do
+            Actions [{ Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }]
+            Conditions listener_conditions
+            ListenerArn Ref(targetgroup['listener_resource'])
+            Priority rule['priority']
+          end
+
+        end
+
+        targetgroup_arn =  Ref(targetgroup['resource_name'])
+      else
+        targetgroup_arn = Ref('TargetGroup')
+      end
+
+      Output("#{targetgroup['resource_name']}") {
+        Value(targetgroup_arn)
+        Export FnSub("${EnvironmentName}-#{export}-#{targetgroup['resource_name']}")
+      }
+
+      service_loadbalancer << {
+        ContainerName: targetgroup['container'],
+        ContainerPort: targetgroup['port'],
+        TargetGroupArn: targetgroup_arn
+      }
     end
 
 
-    service_loadbalancer << {
-      ContainerName: targetgroup['container'],
-      ContainerPort: targetgroup['port'],
-      TargetGroupArn: targetgroup_arn
-    }
 
+  end
+  
+  targetgroups = external_parameters.fetch(:targetgroups, [])
+  unless targetgroups.empty?
+    
   end
 
   health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)

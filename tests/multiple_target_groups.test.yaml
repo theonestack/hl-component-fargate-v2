@@ -1,0 +1,33 @@
+
+test_metadata:
+  type: config
+  name: multiple_target_groups
+  description: Application Load Balancer task
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+targetgroup:
+  - name: web
+    type: ip
+    container: nginx
+    port: 80
+    protocol: http
+    listener: http
+    rules:
+      -
+        host: www.*
+        priority: 10
+  - name: secure
+    type: ip
+    container: nginx
+    port: 443
+    protocol: http
+    listener: https
+    rules:
+      -
+        host: www.*
+        priority: 10
