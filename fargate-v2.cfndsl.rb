@@ -144,6 +144,7 @@ CloudFormation do
           MinimumHealthyPercent: Ref('MinimumHealthyPercent'),
           MaximumPercent: Ref('MaximumPercent')
       })
+      EnableExecuteCommand external_parameters.fetch(:enable_execute_command, false)
       TaskDefinition "Ref" => "Task" #Hack to work referencing child component resource
       HealthCheckGracePeriodSeconds health_check_grace_period unless health_check_grace_period.nil?
       LaunchType "FARGATE"

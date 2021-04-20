@@ -1,0 +1,12 @@
+
+test_metadata:
+  type: config
+  name: ecs_exec
+  description: minimal task
+
+platform_version: '1.4.0'
+task_definition:
+  proxy:
+    image: nginx
+
+enable_execute_command: true

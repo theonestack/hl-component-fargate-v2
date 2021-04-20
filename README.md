@@ -1,8 +1,8 @@
+![cftest](https://github.com/theonestack/hl-component-ecs-task/actions/workflows/rspec.yaml/badge.svg)
+
 # fargate-v2 CfHighlander component
 
 Deploys a ECS fargates service with support for creating and managing ALB/NLB target groups
-
-[![Build Status](https://travis-ci.com/theonestack/hl-component-fargate-v2.svg?branch=master)](https://travis-ci.com/theonestack/hl-component-fargate-v2)
 
 # vpc-v2 CfHighlander component
 

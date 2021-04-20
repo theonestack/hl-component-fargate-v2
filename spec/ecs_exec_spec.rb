@@ -4,11 +4,11 @@ describe 'compiled component' do
   
   context 'cftest' do
     it 'compiles test' do
-      expect(system("cfhighlander cftest #{@validate} --tests tests/simple.test.yaml")).to be_truthy
+      expect(system("cfhighlander cftest #{@validate} --tests tests/ecs_exec.test.yaml")).to be_truthy
     end      
   end
   
-  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/simple/fargate-v2.compiled.yaml") }
+  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/ecs_exec/fargate-v2.compiled.yaml") }
 
   context 'Resource LogGroup' do
 
@@ -137,17 +137,34 @@ describe 'compiled component' do
     end
 
     it 'has Polices' do
-      expect(properties["Policies"]).to eq([{
-        "PolicyDocument"=>{
-          "Statement"=>[{
-            "Action"=>["logs:GetLogEvents"],
-            "Effect"=>"Allow",
-            "Resource"=>[{"Fn::GetAtt"=>["LogGroup", "Arn"]}],
-            "Sid"=>"fargatedefaultpolicy"}
-          ]},
-          "PolicyName"=>"fargate_default_policy"
-        }]
-      )
+      expect(properties["Policies"]).to eq([
+        {
+          "PolicyDocument"=>{
+            "Statement"=>[{
+              "Action"=>["logs:GetLogEvents"],
+              "Effect"=>"Allow",
+              "Resource"=>[{"Fn::GetAtt"=>["LogGroup", "Arn"]}],
+              "Sid"=>"fargatedefaultpolicy"}
+            ]},
+            "PolicyName"=>"fargate_default_policy"
+        },
+        {
+          "PolicyName" => "ssm-session-manager",
+          "PolicyDocument" => {
+            "Statement" => [{
+              "Sid" => "ssmsessionmanager",
+              "Effect" => "Allow",
+              "Action" => [
+                "ssmmessages:CreateControlChannel",
+                "ssmmessages:CreateDataChannel",
+                "ssmmessages:OpenControlChannel",
+                "ssmmessages:OpenDataChannel"
+              ],
+              "Resource" => ["*"],
+            }]
+          }
+        }
+      ])
     end
 
   end
