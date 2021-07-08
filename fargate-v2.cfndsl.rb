@@ -172,6 +172,35 @@ CloudFormation do
   unless deployment_circuit_breaker.empty?
     deployment_configuration['DeploymentCircuitBreaker'] = deployment_circuit_breaker 
   end
+
+  registry = {}
+  service_discovery = external_parameters.fetch(:service_discovery, {})
+
+  unless service_discovery.empty?
+
+    ServiceDiscovery_Service(:ServiceRegistry) {
+      NamespaceId Ref(:NamespaceId)
+      Name service_discovery['name']  if service_discovery.has_key? 'name'
+      DnsConfig({
+        DnsRecords: [{
+          TTL: 60,
+          Type: 'A'
+        }],
+        RoutingPolicy: 'WEIGHTED'
+      })
+      if service_discovery.has_key? 'healthcheck'
+        HealthCheckConfig service_discovery['healthcheck']
+      else
+        HealthCheckCustomConfig ({ FailureThreshold: (service_discovery['failure_threshold'] || 1) })
+      end
+    }
+
+    registry[:RegistryArn] = FnGetAtt(:ServiceRegistry, :Arn)
+    registry[:ContainerName] = service_discovery['container_name']
+    registry[:ContainerPort] = service_discovery['container_port'] if service_discovery.has_key? 'container_port'
+    registry[:Port] = service_discovery['port'] if service_discovery.has_key? 'port'
+  end
+
   unless task_definition.empty?
 
     ECS_Service('EcsFargateService') do
@@ -195,6 +224,10 @@ CloudFormation do
           Subnets: Ref('SubnetIds')
         }
       })
+
+      unless registry.empty?
+        ServiceRegistries([registry])
+      end
 
     end
 

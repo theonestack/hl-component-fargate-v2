@@ -33,6 +33,10 @@ CfhighlanderTemplate do
     ComponentParam 'MinimumHealthyPercent', 100
     ComponentParam 'MaximumPercent', 200
     ComponentParam 'EnableScaling', 'false', allowedValues: ['true','false']
+
+    if defined? service_discovery
+      ComponentParam 'NamespaceId'
+    end
   end
 
   #Pass the all the config from the parent component to the inlined component

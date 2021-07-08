@@ -1,0 +1,20 @@
+test_metadata:
+  type: config
+  name: service_discovery_complete
+  description: complete service discovery config for a fargate service
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+service_discovery:
+  name: proxy
+  container_name: proxy
+  container_port: 80
+  port: 8080
+  healthcheck:
+    FailureThreshold: 3
+    ResourcePath: /healthcheck
+    Type: HTTP

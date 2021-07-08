@@ -1,0 +1,13 @@
+test_metadata:
+  type: config
+  name: service_discovery
+  description: minimal service discovery config for a fargate service
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+service_discovery:
+  container_name: proxy
