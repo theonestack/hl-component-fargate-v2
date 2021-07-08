@@ -61,4 +61,20 @@ describe 'compiled component' do
 
   end
 
+  context 'Resource SecurityGroup Inbound SSH From CIDR' do
+
+    let(:ingress) { template["Resources"]["IngressRule4"]["Properties"] }
+  
+    it 'has property Properties' do
+      expect(ingress).to eq({
+        "Description"=>"allow inbound 22 access from cidr",
+        "FromPort"=>22, 
+        "CidrIp"=>{"Fn::Sub"=>"10.0.0.1/32"}, 
+        "IpProtocol"=>"tcp", 
+        "ToPort"=>22
+      })
+    end
+
+  end
+
 end
