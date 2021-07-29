@@ -69,7 +69,8 @@ describe 'compiled component' do
       expect(ingress).to eq({
         "Description"=>"allow inbound 22 access from cidr",
         "FromPort"=>22, 
-        "CidrIp"=>{"Fn::Sub"=>"10.0.0.1/32"}, 
+        "CidrIp"=>"10.0.0.1/32", 
+        "GroupId" => {"Ref"=>"SecurityGroup"},
         "IpProtocol"=>"tcp", 
         "ToPort"=>22
       })

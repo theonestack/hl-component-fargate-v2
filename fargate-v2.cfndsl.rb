@@ -28,7 +28,7 @@ CloudFormation do
     EC2_SecurityGroupIngress("IngressRule#{i+1}") do
       Description ingress_rule['desc'] if ingress_rule.has_key?('desc')
       if ingress_rule.has_key?('cidr')
-        CidrIp FnSub(ingress_rule['cidr'])
+        CidrIp ingress_rule['cidr']
       else
         SourceSecurityGroupId ingress_rule.has_key?('source_sg') ? ingress_rule['source_sg'] :  Ref(:SecurityGroup)
       end
