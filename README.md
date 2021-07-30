@@ -1,4 +1,4 @@
-![cftest](https://github.com/theonestack/hl-component-ecs-task/actions/workflows/rspec.yaml/badge.svg)
+![cftest](https://github.com/theonestack/hl-component-fargate-v2/actions/workflows/rspec.yaml/badge.svg)
 
 # fargate-v2 CfHighlander component
 
