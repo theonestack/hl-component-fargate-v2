@@ -142,7 +142,11 @@ CloudFormation do
 
         targetgroup_arn =  Ref(targetgroup['resource_name'])
       else
-        targetgroup_arn = Ref('TargetGroup')
+        if multiplie_target_groups
+          targetgroup_arn = Ref(targetgroup['resource_name'])
+        else
+          targetgroup_arn = Ref('TargetGroup')
+        end
       end
 
       Output("#{targetgroup['resource_name']}") {

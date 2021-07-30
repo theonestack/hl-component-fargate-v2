@@ -1,0 +1,22 @@
+
+test_metadata:
+  type: config
+  name: existing_target_groups
+  description: existing targetgroups
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+targetgroup:
+  - name: web
+    type: ip
+    container: nginx
+    port: 80
+
+  - name: secure
+    type: ip
+    container: nginx
+    port: 443
