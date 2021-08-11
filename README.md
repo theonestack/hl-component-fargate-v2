@@ -92,7 +92,7 @@ compiling the templates
 cfcompile fargate-v2
 ```
 
-compiling with the vaildate fag to validate the templates
+compiling with the vaildate flag to validate the templates
 
 ```bash
 cfcompile fargate-v2 --validate
