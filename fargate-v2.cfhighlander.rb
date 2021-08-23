@@ -32,7 +32,6 @@ CfhighlanderTemplate do
     ComponentParam 'DesiredCount', 1
     ComponentParam 'MinimumHealthyPercent', 100
     ComponentParam 'MaximumPercent', 200
-    ComponentParam 'EnableScaling', 'false', allowedValues: ['true','false']
 
     if defined? service_discovery
       ComponentParam 'NamespaceId'
@@ -42,6 +41,12 @@ CfhighlanderTemplate do
   #Pass the all the config from the parent component to the inlined component
   Component template: 'ecs-task@0.5.4', name: "#{component_name.gsub('-','').gsub('_','')}Task", render: Inline, config: @config do
     parameter name: 'DnsDomain', value: Ref('DnsDomain')
+  end
+
+  unless service_namespace.nil?
+    Component template: 'application-autoscaling@0.1.0', name: "#{component_name.gsub('-','').gsub('_','')}Scaling", render: Inline, conditional: true, enabled: false, config: @config do
+      parameter name: 'Service', value: Ref('EcsFargateService')
+    end
   end
 
 end

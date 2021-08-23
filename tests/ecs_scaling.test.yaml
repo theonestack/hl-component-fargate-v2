@@ -1,0 +1,12 @@
+
+test_metadata:
+  type: config
+  name: ecs_scaling
+  description: minimal task
+
+platform_version: '1.4.0'
+task_definition:
+  proxy:
+    image: nginx
+
+service_namespace: ecs

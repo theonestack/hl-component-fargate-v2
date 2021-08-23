@@ -3,6 +3,8 @@ network_mode: awsvpc
 cpu: 256
 memory: 512
 
+service_namespace: null
+
 iam_policies:
   fargate_default_policy:
     action:
