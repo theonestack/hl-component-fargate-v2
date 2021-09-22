@@ -1,0 +1,117 @@
+test_metadata:
+  type: config
+  name: iam_policy
+  description: test setting iam policies
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+iam_policies:
+  create-spot-service-liked-role:
+    action:
+      - iam:CreateServiceLinkedRole
+    condition:
+      StringLike:
+        iam:AWSServiceName: spot.amazonaws.com
+  cross-account-sts:
+    action:
+      - sts:AssumeRole
+  get-identity:
+    action:
+      - sts:GetCallerIdentity
+  iam-pass-role:
+    action:
+      - iam:ListRoles
+      - iam:PassRole
+      - iam:ListInstanceProfiles
+  ec2-fleet-plugin:
+    action:
+      - ec2:*
+  s3-list-ciinabox-bucket:
+    action:
+      - s3:ListBucket
+      - s3:GetBucketLocation
+    resource:
+      - Fn::Sub: arn:aws:s3:::bucket
+  s3-rw:
+    action:
+      - s3:GetObject
+      - s3:GetObjectAcl
+      - s3:GetObjectVersion
+      - s3:PutObject
+      - s3:PutObjectAcl
+    resource:
+      - Fn::Sub: arn:aws:s3:::bucket/*
+  secretsmanager-list:
+    action:
+      - secretsmanager:ListSecrets
+  secretsmanager-get:
+    action:
+      - secretsmanager:GetSecretValue
+    resource:
+      - Fn::Sub: arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/${EnvironmentName}/jenkins/*
+  ssm-parameters:
+    action:
+      - ssm:GetParameter
+      - ssm:GetParametersByPath
+    resource:
+      - Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ciinabox/*
+      - Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/aws/*
+  sns-publish:
+    action:
+      - sns:Publish
+  ecr-manange-repos:
+    action:
+      - ecr:*
+  codeartifact-manange-repos:
+    action:
+      - codeartifact:*
+  codecommit-pull:
+    action:
+      - codecommit:BatchGet*
+      - codecommit:BatchDescribe*
+      - codecommit:Describe*
+      - codecommit:EvaluatePullRequestApprovalRules
+      - codecommit:Get*
+      - codecommit:List*
+      - codecommit:GitPull
+  ecs-manage-tasks:
+    - action:
+        - ecs:RunTask
+        - ecs:DescribeTasks
+        - ecs:RegisterTaskDefinition
+        - ecs:ListClusters
+        - ecs:DescribeContainerInstances
+        - ecs:ListTaskDefinitions
+        - ecs:DescribeTaskDefinition
+        - ecs:DeregisterTaskDefinition
+    - action:
+        - "ecs:ListContainerInstances"
+        - "ecs:DescribeClusters"
+      resource:
+        - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/my-cluster"
+    - action:
+        - "ecs:RunTask"
+      condition:
+        ArnEquals:
+          ecs:cluster:
+            - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/my-cluster"
+      resource: 
+        - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/*"
+    - action:
+        - "ecs:StopTask"
+      condition:
+        ArnEquals:
+          ecs:cluster:
+            - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/my-cluster"
+      resource: "arn:aws:ecs:*:*:task/*"
+    - action:
+          - "ecs:DescribeTasks"
+      condition:
+        ArnEquals:
+          ecs:cluster:
+            - Fn::Sub: "arn:aws:ecs:${AWS::Region}:${AWS::AccountId}:cluster/my-cluster"
+      resource: "arn:aws:ecs:*:*:task/*"
