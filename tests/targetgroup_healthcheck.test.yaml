@@ -1,0 +1,25 @@
+test_metadata:
+  type: config
+  name: targetgroup_healthcheck
+  description: set the description for your test
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+targetgroup:
+- name: proxy
+  container: proxy
+  port: 8080
+  protocol: http
+  listener: https
+  type: ip
+  healthcheck:
+    interval: 30
+    timeout: 10
+    healthy_count: 2
+    unhealthy_count: 10
+    path: /healthcheck
+    code: 200
