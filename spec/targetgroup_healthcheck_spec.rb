@@ -30,6 +30,84 @@ describe 'compiled component fargate-v2' do
       
     end
     
+    context "TaskTargetGroup" do
+      let(:resource) { template["Resources"]["TaskTargetGroup"] }
+
+      it "is of type AWS::ElasticLoadBalancingV2::TargetGroup" do
+          expect(resource["Type"]).to eq("AWS::ElasticLoadBalancingV2::TargetGroup")
+      end
+      
+      it "to have property Port" do
+          expect(resource["Properties"]["Port"]).to eq(8080)
+      end
+      
+      it "to have property Protocol" do
+          expect(resource["Properties"]["Protocol"]).to eq("HTTP")
+      end
+      
+      it "to have property VpcId" do
+          expect(resource["Properties"]["VpcId"]).to eq({"Ref"=>"VPCId"})
+      end
+      
+      it "to have property HealthCheckIntervalSeconds" do
+          expect(resource["Properties"]["HealthCheckIntervalSeconds"]).to eq(30)
+      end
+      
+      it "to have property HealthCheckTimeoutSeconds" do
+          expect(resource["Properties"]["HealthCheckTimeoutSeconds"]).to eq(10)
+      end
+      
+      it "to have property HealthyThresholdCount" do
+          expect(resource["Properties"]["HealthyThresholdCount"]).to eq(2)
+      end
+      
+      it "to have property UnhealthyThresholdCount" do
+          expect(resource["Properties"]["UnhealthyThresholdCount"]).to eq(10)
+      end
+      
+      it "to have property HealthCheckPath" do
+          expect(resource["Properties"]["HealthCheckPath"]).to eq("/healthcheck")
+      end
+      
+      it "to have property Matcher" do
+          expect(resource["Properties"]["Matcher"]).to eq({"HttpCode"=>200})
+      end
+      
+      it "to have property TargetType" do
+          expect(resource["Properties"]["TargetType"]).to eq("ip")
+      end
+      
+      it "to have property Tags" do
+          expect(resource["Properties"]["Tags"]).to eq([{"Key"=>"Environment", "Value"=>{"Ref"=>"EnvironmentName"}}, {"Key"=>"EnvironmentType", "Value"=>{"Ref"=>"EnvironmentType"}}])
+      end
+      
+    end
+    
+    context "TargetRule10" do
+      let(:resource) { template["Resources"]["TargetRule10"] }
+
+      it "is of type AWS::ElasticLoadBalancingV2::ListenerRule" do
+          expect(resource["Type"]).to eq("AWS::ElasticLoadBalancingV2::ListenerRule")
+      end
+      
+      it "to have property Actions" do
+          expect(resource["Properties"]["Actions"]).to eq([{"Type"=>"forward", "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}])
+      end
+      
+      it "to have property Conditions" do
+          expect(resource["Properties"]["Conditions"]).to eq([{"Field"=>"host-header", "Values"=>[{"Fn::Join"=>["", ["*", ".", {"Ref"=>"DnsDomain"}]]}]}])
+      end
+      
+      it "to have property ListenerArn" do
+          expect(resource["Properties"]["ListenerArn"]).to eq({"Ref"=>"Listener"})
+      end
+      
+      it "to have property Priority" do
+          expect(resource["Properties"]["Priority"]).to eq(10)
+      end
+      
+    end
+    
     context "EcsFargateService" do
       let(:resource) { template["Resources"]["EcsFargateService"] }
 
@@ -62,7 +140,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property LoadBalancers" do
-          expect(resource["Properties"]["LoadBalancers"]).to eq([{"ContainerName"=>"proxy", "ContainerPort"=>8080, "TargetGroupArn"=>{"Ref"=>"proxyTargetGroup"}}])
+          expect(resource["Properties"]["LoadBalancers"]).to eq([{"ContainerName"=>"proxy", "ContainerPort"=>8080, "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}])
       end
       
       it "to have property NetworkConfiguration" do

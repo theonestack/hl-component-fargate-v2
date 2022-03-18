@@ -10,7 +10,7 @@ task_definition:
       - 80
 
 targetgroup:
-- name: proxy
+  name: proxy
   container: proxy
   port: 8080
   protocol: http
@@ -23,3 +23,7 @@ targetgroup:
     unhealthy_count: 10
     path: /healthcheck
     code: 200
+  rules:
+    -
+      host: '*'
+      priority: 10
