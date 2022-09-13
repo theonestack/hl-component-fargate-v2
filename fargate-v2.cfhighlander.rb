@@ -44,7 +44,7 @@ CfhighlanderTemplate do
   end
 
   unless service_namespace.nil?
-    Component template: 'application-autoscaling@0.1.3', name: "#{component_name.gsub('-','').gsub('_','')}Scaling", render: Inline, conditional: true, enabled: false, config: @config do
+    Component template: 'application-autoscaling@0.1.6', name: "#{component_name.gsub('-','').gsub('_','')}Scaling", render: Inline, conditional: true, enabled: false, config: @config do
       parameter name: 'Service', value: Ref('EcsFargateService')
     end
   end
