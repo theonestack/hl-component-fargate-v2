@@ -60,7 +60,7 @@ CloudFormation do
     targetgroups.each do |targetgroup|
       if targetgroup.has_key?('cognito')
         targetgroup['cognito'].each do |cognito_condition|
-          ElasticLoadBalancingV2_ListenerRule(rule_name) do
+          ElasticLoadBalancingV2_ListenerRule("CongitoRule#{targetgroup['resource_name']}") do
             Actions [cognito(self)]
             Conditions generate_fargate_listener_conditions(cognito_condition)
             ListenerArn Ref(targetgroup['listener_resource'])
