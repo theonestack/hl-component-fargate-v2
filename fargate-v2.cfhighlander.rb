@@ -2,6 +2,7 @@ CfhighlanderTemplate do
 
   DependsOn 'lib-iam@0.2.0'
   DependsOn 'lib-ec2@0.1.0'
+  DependsOn 'lib-alb@feature/cognito_listener_rules'
   
   Parameters do
     ComponentParam 'EnvironmentName', 'dev', isGlobal: true

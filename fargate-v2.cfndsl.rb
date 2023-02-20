@@ -58,6 +58,17 @@ CloudFormation do
     end
 
     targetgroups.each do |targetgroup|
+      if targetgroup.has_key?('cognito')
+        targetgroup['congito'].each do |cognito_condition|
+          ElasticLoadBalancingV2_ListenerRule(rule_name) do
+            Actions [{ Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }]
+            Conditions generate_fargate_listener_conditions(cognito_condition)
+            ListenerArn Ref(targetgroup['listener_resource'])
+            Priority 1
+          end
+        end
+      end
+
       if targetgroup.has_key?('rules')
 
         attributes = []
@@ -98,22 +109,7 @@ CloudFormation do
         end
 
         targetgroup['rules'].each_with_index do |rule, index|
-          listener_conditions = []
-          if rule.key?("path")
-            listener_conditions << { Field: "path-pattern", Values: [ rule["path"] ].flatten() }
-          end
-          if rule.key?("host")
-            hosts = []
-            if rule["host"].include?('!DNSDomain')
-              host_subdomain = rule["host"].gsub('!DNSDomain', '') #remove <DNSDomain>
-              hosts << FnJoin("", [ host_subdomain , Ref('DnsDomain') ])
-            elsif rule["host"].include?('.')
-              hosts << rule["host"]
-            else
-              hosts << FnJoin("", [ rule["host"], ".", Ref('DnsDomain') ])
-            end
-            listener_conditions << { Field: "host-header", Values: hosts }
-          end
+          listener_conditions = generate_fargate_listener_conditions(rule)
 
           if rule.key?("name")
             rule_name = rule['name']
