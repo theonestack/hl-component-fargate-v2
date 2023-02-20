@@ -117,7 +117,7 @@ CloudFormation do
           end
 
           actions = []
-          actions << { Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }
+          actions << { Type: "forward", Order: 5000, TargetGroupArn: Ref(targetgroup['resource_name']) }
 
           if targetgroup.has_key?('cognito')
             if targetgroup['cognito'] == true
