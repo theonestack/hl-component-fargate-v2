@@ -61,7 +61,7 @@ CloudFormation do
       if targetgroup.has_key?('cognito')
         targetgroup['congito'].each do |cognito_condition|
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
-            Actions [{ Type: "forward", TargetGroupArn: Ref(targetgroup['resource_name']) }]
+            Actions [cognito(self)]
             Conditions generate_fargate_listener_conditions(cognito_condition)
             ListenerArn Ref(targetgroup['listener_resource'])
             Priority 1

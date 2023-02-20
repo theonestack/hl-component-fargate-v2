@@ -12,6 +12,9 @@ CfhighlanderTemplate do
     ComponentParam 'SubnetIds', type: 'CommaDelimitedList'
 
     ComponentParam 'EcsCluster'
+    ComponentParam 'UserPoolId', ''
+    ComponentParam 'UserPoolClientId', ''
+    ComponentParam 'UserPoolDomainName', ''
 
     if defined? targetgroup
       ComponentParam 'DnsDomain', isGlobal: true
