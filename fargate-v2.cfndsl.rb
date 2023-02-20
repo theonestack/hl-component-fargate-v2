@@ -59,7 +59,7 @@ CloudFormation do
 
     targetgroups.each do |targetgroup|
       if targetgroup.has_key?('cognito')
-        targetgroup['congito'].each do |cognito_condition|
+        targetgroup['cognito'].each do |cognito_condition|
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
             Actions [cognito(self)]
             Conditions generate_fargate_listener_conditions(cognito_condition)
