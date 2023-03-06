@@ -133,11 +133,11 @@ CloudFormation do
             end
           end
 
-          actions = [{ Type: "forward", Order: 5000, TargetGroupArn: Ref(targetgroup['resource_name']) }]
+          actions = [{ Type: "forward", Order: 5000, TargetGroupArn: Ref(targetgroup['resource_name'])}]
           actions_with_cognito = actions + [cognito(Ref(:UserPoolId), Ref(:UserPoolClientId), Ref(:UserPoolDomainName))]
           
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
-            Actions FnIf(:EnableCognito, actions_with_cognito, actions )
+            Actions FnIf(:EnableCognito, actions_with_cognito, actions)
             Conditions listener_conditions
             ListenerArn Ref(targetgroup['listener_resource'])
             Priority rule['priority']
