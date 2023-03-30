@@ -2,6 +2,7 @@ CfhighlanderTemplate do
 
   DependsOn 'lib-iam@0.2.0'
   DependsOn 'lib-ec2@0.1.0'
+  DependsOn 'lib-alb'
   
   Parameters do
     ComponentParam 'EnvironmentName', 'dev', isGlobal: true
@@ -11,6 +12,9 @@ CfhighlanderTemplate do
     ComponentParam 'SubnetIds', type: 'CommaDelimitedList'
 
     ComponentParam 'EcsCluster'
+    ComponentParam 'UserPoolId', ''
+    ComponentParam 'UserPoolClientId', ''
+    ComponentParam 'UserPoolDomainName', ''
 
     if defined? targetgroup
       ComponentParam 'DnsDomain', isGlobal: true

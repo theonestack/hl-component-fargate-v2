@@ -91,7 +91,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property Actions" do
-          expect(resource["Properties"]["Actions"]).to eq([{"Type"=>"forward", "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}])
+          expect(resource["Properties"]["Actions"]).to eq({"Fn::If"=>["EnableCognito", [{"Type"=>"forward", "Order"=>5000, "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}, {"Type"=>"authenticate-cognito", "Order"=>1, "AuthenticateCognitoConfig"=>{"UserPoolArn"=>{"Ref"=>"UserPoolId"}, "UserPoolClientId"=>{"Ref"=>"UserPoolClientId"}, "UserPoolDomain"=>{"Ref"=>"UserPoolDomainName"}}}], [{"Type"=>"forward", "Order"=>5000, "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}]]})
       end
       
       it "to have property Conditions" do
