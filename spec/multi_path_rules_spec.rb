@@ -4,11 +4,11 @@ describe 'compiled component fargate-v2' do
   
   context 'cftest' do
     it 'compiles test' do
-      expect(system("cfhighlander cftest #{@validate} --tests tests/existing_target_groups.test.yaml")).to be_truthy
+      expect(system("cfhighlander cftest #{@validate} --tests tests/multi_path_rules.test.yaml")).to be_truthy
     end      
   end
   
-  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/existing_target_groups/fargate-v2.compiled.yaml") }
+  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/multi_path_rules/fargate-v2.compiled.yaml") }
   
   context "Resource" do
 
@@ -26,6 +26,60 @@ describe 'compiled component fargate-v2' do
       
       it "to have property GroupDescription" do
           expect(resource["Properties"]["GroupDescription"]).to eq("fargate-v2 fargate service")
+      end
+      
+    end
+    
+    context "TaskTargetGroup" do
+      let(:resource) { template["Resources"]["TaskTargetGroup"] }
+
+      it "is of type AWS::ElasticLoadBalancingV2::TargetGroup" do
+          expect(resource["Type"]).to eq("AWS::ElasticLoadBalancingV2::TargetGroup")
+      end
+      
+      it "to have property Port" do
+          expect(resource["Properties"]["Port"]).to eq(80)
+      end
+      
+      it "to have property Protocol" do
+          expect(resource["Properties"]["Protocol"]).to eq("HTTP")
+      end
+      
+      it "to have property VpcId" do
+          expect(resource["Properties"]["VpcId"]).to eq({"Ref"=>"VPCId"})
+      end
+      
+      it "to have property TargetType" do
+          expect(resource["Properties"]["TargetType"]).to eq("ip")
+      end
+      
+      it "to have property Tags" do
+          expect(resource["Properties"]["Tags"]).to eq([{"Key"=>"Environment", "Value"=>{"Ref"=>"EnvironmentName"}}, {"Key"=>"EnvironmentType", "Value"=>{"Ref"=>"EnvironmentType"}}])
+      end
+      
+    end
+    
+    context "TargetRule10" do
+      let(:resource) { template["Resources"]["TargetRule10"] }
+
+      it "is of type AWS::ElasticLoadBalancingV2::ListenerRule" do
+          expect(resource["Type"]).to eq("AWS::ElasticLoadBalancingV2::ListenerRule")
+      end
+      
+      it "to have property Actions" do
+          expect(resource["Properties"]["Actions"]).to eq({"Fn::If"=>["EnableCognito", [{"Type"=>"forward", "Order"=>5000, "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}, {"Type"=>"authenticate-cognito", "Order"=>1, "AuthenticateCognitoConfig"=>{"UserPoolArn"=>{"Ref"=>"UserPoolId"}, "UserPoolClientId"=>{"Ref"=>"UserPoolClientId"}, "UserPoolDomain"=>{"Ref"=>"UserPoolDomainName"}}}], [{"Type"=>"forward", "Order"=>5000, "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}]]})
+      end
+      
+      it "to have property Conditions" do
+          expect(resource["Properties"]["Conditions"]).to eq([{"Field"=>"path-pattern", "Values"=>["/v1", "/v1/*"]}, {"Field"=>"host-header", "Values"=>["www.*"]}])
+      end
+      
+      it "to have property ListenerArn" do
+          expect(resource["Properties"]["ListenerArn"]).to eq({"Ref"=>"Listener"})
+      end
+      
+      it "to have property Priority" do
+          expect(resource["Properties"]["Priority"]).to eq(10)
       end
       
     end
@@ -62,7 +116,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property LoadBalancers" do
-          expect(resource["Properties"]["LoadBalancers"]).to eq([{"ContainerName"=>"nginx", "ContainerPort"=>80, "TargetGroupArn"=>{"Ref"=>"webTargetGroup"}}, {"ContainerName"=>"nginx", "ContainerPort"=>443, "TargetGroupArn"=>{"Ref"=>"secureTargetGroup"}}])
+          expect(resource["Properties"]["LoadBalancers"]).to eq([{"ContainerName"=>"nginx", "ContainerPort"=>80, "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}])
       end
       
       it "to have property NetworkConfiguration" do
