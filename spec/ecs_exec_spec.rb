@@ -104,7 +104,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property Policies" do
-          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"fargate_default_policy", "PolicyDocument"=>{"Statement"=>[{"Sid"=>"fargatedefaultpolicy", "Action"=>["logs:GetLogEvents"], "Resource"=>[{"Fn::GetAtt"=>["LogGroup", "Arn"]}], "Effect"=>"Allow"}]}}, {"PolicyName"=>"ssm-session-manager", "PolicyDocument"=>{"Statement"=>[{"Sid"=>"ssmsessionmanager", "Action"=>["ssmmessages:CreateControlChannel", "ssmmessages:CreateDataChannel", "ssmmessages:OpenControlChannel", "ssmmessages:OpenDataChannel"], "Resource"=>["*"], "Effect"=>"Allow"}]}}])
+          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"fargate_default_policy", "PolicyDocument"=>{"Version"=>"2012-10-17", "Statement"=>[{"Sid"=>"fargatedefaultpolicy", "Action"=>["logs:GetLogEvents"], "Resource"=>[{"Fn::GetAtt"=>["LogGroup", "Arn"]}], "Effect"=>"Allow"}]}}, {"PolicyName"=>"ssm-session-manager", "PolicyDocument"=>{"Version"=>"2012-10-17", "Statement"=>[{"Sid"=>"ssmsessionmanager", "Action"=>["ssmmessages:CreateControlChannel", "ssmmessages:CreateDataChannel", "ssmmessages:OpenControlChannel", "ssmmessages:OpenDataChannel"], "Resource"=>["*"], "Effect"=>"Allow"}]}}])
       end
       
     end
