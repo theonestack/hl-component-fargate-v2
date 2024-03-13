@@ -211,7 +211,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property RetentionInDays" do
-          expect(resource["Properties"]["RetentionInDays"]).to eq("7")
+          expect(resource["Properties"]["RetentionInDays"]).to eq(7)
       end
       
     end
