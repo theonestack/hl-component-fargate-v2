@@ -44,7 +44,7 @@ CfhighlanderTemplate do
   end
 
   #Pass the all the config from the parent component to the inlined component
-  Component template: 'ecs-task@0.5.8', name: "#{component_name.gsub('-','').gsub('_','')}Task", render: Inline, config: @config do
+  Component template: 'github:base2services/hl-component-ecs-task#fix/task-image-subs.snapshot', name: "#{component_name.gsub('-','').gsub('_','')}Task", render: Inline, config: @config do
     parameter name: 'DnsDomain', value: Ref('DnsDomain')
   end
 
