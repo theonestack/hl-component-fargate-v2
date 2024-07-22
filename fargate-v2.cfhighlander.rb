@@ -46,6 +46,7 @@ CfhighlanderTemplate do
   #Pass the all the config from the parent component to the inlined component
   Component template: 'git:https://github.com/theonestack/hl-component-ecs-task#feature/ebs-support.snapshot', name: "#{component_name.gsub('-','').gsub('_','')}Task", render: Inline, config: @config do
     parameter name: 'DnsDomain', value: Ref('DnsDomain')
+    parameter name: 'EbsAZ', value: Ref('EbsAZ')
   end
 
   unless service_namespace.nil?
