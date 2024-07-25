@@ -39,7 +39,7 @@ CloudFormation do
     end
   end
 
-  Condition(:EnableCognito, FnNot(FnEquals(Ref(:FargateUserPoolClientId), '')))
+  Condition(:FargateEnableCognito, FnNot(FnEquals(Ref(:FargateUserPoolClientId), '')))
 
   service_loadbalancer = []
   targetgroups = external_parameters.fetch(:targetgroup, {})
@@ -137,7 +137,7 @@ CloudFormation do
           actions_with_cognito = actions + [cognito(Ref(:FargateUserPoolId), Ref(:FargateUserPoolClientId), Ref(:FargateUserPoolDomainName))]
           
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
-            Actions FnIf(:EnableCognito, actions_with_cognito, actions)
+            Actions FnIf(:FargateEnableCognito, actions_with_cognito, actions)
             Conditions listener_conditions
             ListenerArn Ref(targetgroup['listener_resource'])
             Priority rule['priority']
