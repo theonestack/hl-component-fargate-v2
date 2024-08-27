@@ -48,9 +48,9 @@ CfhighlanderTemplate do
   Component template: 'ecs-task@0.5.10', name: "#{component_name.gsub('-','').gsub('_','')}Task", render: Inline, config: @config do
     parameter name: 'DnsDomain', value: Ref('DnsDomain')
     
-    optional_parameters.each do |parameter_name|
+    additional_parameters.each do |parameter_name|
       parameter name: parameter_name, value: Ref(parameter_name)
-    end if defined? optional_parameters
+    end if defined? additional_parameters
 
   end
 
