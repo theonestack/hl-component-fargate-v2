@@ -41,6 +41,11 @@ CfhighlanderTemplate do
     if defined? service_discovery
       ComponentParam 'NamespaceId'
     end
+
+    optional_parameters.each do |parameter, default_value|
+      ComponentParam parameter, default_value
+    end if defined? optional_parameters
+
   end
 
   #Pass the all the config from the parent component to the inlined component
