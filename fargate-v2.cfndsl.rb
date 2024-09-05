@@ -3,7 +3,6 @@ CloudFormation do
   export = external_parameters.fetch(:export_name, external_parameters[:component_name])
 
   fargate_tags = []
-  fargate_tags << { Key: 'Name', Value: FnSub("${EnvironmentName}-#{export}") }
   fargate_tags << { Key: "Environment", Value: Ref("EnvironmentName") }
   fargate_tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
 
