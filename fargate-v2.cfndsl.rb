@@ -2,6 +2,15 @@ CloudFormation do
 
   export = external_parameters.fetch(:export_name, external_parameters[:component_name])
 
+  fargate_tags = []
+  fargate_tags << { Key: "Environment", Value: Ref("EnvironmentName") }
+  fargate_tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
+
+  tags = external_parameters.fetch(:tags, {})
+  tags.each do |key, value|
+    fargate_tags << { Key: FnSub(key), Value: FnSub(value)}
+  end
+
   task_definition = external_parameters.fetch(:task_definition, nil)
   if task_definition.nil?
     raise 'you must define a task_definition'
@@ -68,12 +77,8 @@ CloudFormation do
           attributes << { Key: key, Value: value }
         end if targetgroup.has_key?('attributes')
 
-        tags = []
-        tags << { Key: "Environment", Value: Ref("EnvironmentName") }
-        tags << { Key: "EnvironmentType", Value: Ref("EnvironmentType") }
-
         targetgroup['tags'].each do |key,value|
-          tags << { Key: key, Value: value }
+          fargate_tags << { Key: key, Value: value }
         end if targetgroup.has_key?('tags')
 
         ElasticLoadBalancingV2_TargetGroup(targetgroup['resource_name']) do
@@ -96,7 +101,7 @@ CloudFormation do
           TargetType targetgroup['type'] if targetgroup.has_key?('type')
           TargetGroupAttributes attributes if attributes.any?
 
-          Tags tags if tags.any?
+          Tags fargate_tags if fargate_tags.any?
         end
 
         targetgroup['rules'].each_with_index do |rule, index|
@@ -225,6 +230,8 @@ CloudFormation do
       TaskDefinition "Ref" => "Task" #Hack to work referencing child component resource
       HealthCheckGracePeriodSeconds health_check_grace_period unless health_check_grace_period.nil?
       LaunchType "FARGATE"
+      Tags fargate_tags if fargate_tags.any?
+      PropagateTags 'SERVICE'
 
       if service_loadbalancer.any?
         LoadBalancers service_loadbalancer

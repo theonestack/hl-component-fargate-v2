@@ -41,11 +41,17 @@ CfhighlanderTemplate do
     if defined? service_discovery
       ComponentParam 'NamespaceId'
     end
+
   end
 
   #Pass the all the config from the parent component to the inlined component
-  Component template: 'ecs-task@0.5.10', name: "#{component_name.gsub('-','').gsub('_','')}Task", render: Inline, config: @config do
+  Component template: 'ecs-task@0.5.11', name: "#{component_name.gsub('-','').gsub('_','')}Task", render: Inline, config: @config do
     parameter name: 'DnsDomain', value: Ref('DnsDomain')
+    
+    additional_parameters.each do |parameter_name|
+      parameter name: parameter_name, value: Ref(parameter_name)
+    end if defined? additional_parameters
+
   end
 
   unless service_namespace.nil?
