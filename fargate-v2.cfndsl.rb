@@ -231,6 +231,7 @@ CloudFormation do
       HealthCheckGracePeriodSeconds health_check_grace_period unless health_check_grace_period.nil?
       LaunchType "FARGATE"
       Tags fargate_tags if fargate_tags.any?
+      PropagateTags 'SERVICE'
 
       if service_loadbalancer.any?
         LoadBalancers service_loadbalancer
