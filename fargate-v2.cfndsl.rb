@@ -79,7 +79,7 @@ CloudFormation do
         tg_tags = Marshal.load(Marshal.dump(fargate_tags))
         targetgroup['tags'].each do |key,value|
           tg_tags << { Key: key, Value: value }
-        end if targetgroup.has_key?('tags')
+        end if
 
         ElasticLoadBalancingV2_TargetGroup(targetgroup['resource_name']) do
           ## Required
