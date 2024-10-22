@@ -1,0 +1,37 @@
+test_metadata:
+  type: config
+  name: secrets
+  description: minimal task
+
+volumes:
+  - Name: data
+    ConfiguredAtLaunch: true
+service_volume_configurations:
+  - Name: data
+    ManagedEBSVolume:
+      Encrypted: false
+      FilesystemType: xfs
+      VolumeType: gp3
+      SizeInGiB: 8
+      TagSpecifications:
+        - PropagateTags: 'SERVICE'
+          ResourceType: 'volume'
+
+task_definition:
+  mongo:
+    image: mongodb/mongodb-community-server
+    ports:
+      - 27017:27017
+    env_vars:
+      GLIBC_TUNABLES: glibc.pthread.rseq=0
+    mounts:
+      - /data/db:data
+  # https://docs.aws.amazon.com/AmazonECS/latest/APIReference/API_HealthCheck.html
+    healthcheck:
+      Command:
+        - CMD-SHELL
+        - mongosh --eval 'db.runCommand("ping").ok'
+      Interval: 6
+      Retries: 3
+      StartPeriod: 0
+      Timeout: 3

@@ -219,6 +219,18 @@ CloudFormation do
     registry[:Port] = service_discovery['port'] if service_discovery.has_key? 'port'
   end
 
+  service_volume_configurations = external_parameters.fetch(:service_volume_configurations, nil)
+  if service_volume_configurations.any?
+    IAM_Role('EbsRole') do
+      AssumeRolePolicyDocument service_assume_role_policy(['ecs'])
+      Path '/'
+      ManagedPolicyArns ["arn:aws:iam::aws:policy/service-role/AmazonECSInfrastructureRolePolicyForVolumes"]
+    end
+    service_volume_configurations.each do |volume|
+      volume['ManagedEBSVolume']['RoleArn'] = FnGetAtt('EbsRole','Arn')
+    end
+  end
+
   unless task_definition.empty?
 
     ECS_Service('EcsFargateService') do
@@ -237,6 +249,10 @@ CloudFormation do
         LoadBalancers service_loadbalancer
       end
 
+      if service_volume_configurations.any?
+        VolumeConfigurations service_volume_configurations
+      end
+      
       NetworkConfiguration ({
         AwsvpcConfiguration: {
           AssignPublicIp: external_parameters[:public_ip] ? "ENABLED" : "DISABLED",
