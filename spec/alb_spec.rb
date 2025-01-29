@@ -90,6 +90,10 @@ describe 'compiled component fargate-v2' do
       it "is of type AWS::ECS::Service" do
           expect(resource["Type"]).to eq("AWS::ECS::Service")
       end
+
+      it "Depends on Listener Rule" do
+        expect(resource["DependsOn"]).to eq(["TargetRule10"])
+    end
       
       it "to have property Cluster" do
           expect(resource["Properties"]["Cluster"]).to eq({"Ref"=>"EcsCluster"})
