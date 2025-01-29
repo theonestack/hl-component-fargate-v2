@@ -138,7 +138,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property ContainerDefinitions" do
-          expect(resource["Properties"]["ContainerDefinitions"]).to eq([{"Name"=>"proxy", "Image"=>{"Fn::Join"=>["", ["", "nginx", ":", "latest"]]}, "LogConfiguration"=>{"LogDriver"=>"awslogs", "Options"=>{"awslogs-group"=>{"Ref"=>"LogGroup"}, "awslogs-region"=>{"Ref"=>"AWS::Region"}, "awslogs-stream-prefix"=>"proxy"}}, "Secrets"=>[{"Name"=>"MY_SECRET", "ValueFrom"=>{"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EnvironmentName}/app/MY_SECRET"}}, {"Name"=>"YOUR_SECRET", "ValueFrom"=>"arn:aws:ssm:eu-central-1:012345678990:parameter/app/YOUR_SECRET"}]}])
+          expect(resource["Properties"]["ContainerDefinitions"]).to eq([{"Name"=>"proxy", "Image"=>{"Fn::Join"=>["", [{"Fn::Sub"=>"nginx"}, ":", "latest"]]}, "LogConfiguration"=>{"LogDriver"=>"awslogs", "Options"=>{"awslogs-group"=>{"Ref"=>"LogGroup"}, "awslogs-region"=>{"Ref"=>"AWS::Region"}, "awslogs-stream-prefix"=>"proxy"}}, "Secrets"=>[{"Name"=>"MY_SECRET", "ValueFrom"=>{"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EnvironmentName}/app/MY_SECRET"}}, {"Name"=>"YOUR_SECRET", "ValueFrom"=>"arn:aws:ssm:eu-central-1:012345678990:parameter/app/YOUR_SECRET"}]}])
       end
       
       it "to have property RequiresCompatibilities" do
