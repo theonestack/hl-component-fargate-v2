@@ -107,6 +107,11 @@ CloudFormation do
 
         targetgroup['rules'].each_with_index do |rule, index|
           listener_conditions = []
+
+          if rule.key?("source_ip")
+            listener_conditions << { Field: "source-ip", SourceIpConfig: { Values: [ rule['source_ip'] ].flatten() }}
+          end
+          
           if rule.key?("path")
             listener_conditions << { Field: "path-pattern", Values: [ rule["path"] ].flatten() }
           end

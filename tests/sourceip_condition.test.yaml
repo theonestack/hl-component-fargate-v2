@@ -1,0 +1,26 @@
+test_metadata:
+  type: config
+  name: dynamic_priorities
+  description: Set a rule priority with a Ref
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+targetgroup:
+  name: web
+  type: ip
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  rules:
+    -
+      host: www.*
+      priority:
+        Ref: MinimumHealthyPercent  # a valid Ref to pass test
+      source_ip:
+        - 52.7.2.93/32
+        - 35.157.39.152/32
