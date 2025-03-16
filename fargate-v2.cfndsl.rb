@@ -117,14 +117,33 @@ CloudFormation do
           end
           if rule.key?("host")
             hosts = []
-            if rule["host"].include?('!DNSDomain')
-              host_subdomain = rule["host"].gsub('!DNSDomain', '') #remove <DNSDomain>
-              hosts << FnJoin("", [ host_subdomain , Ref('DnsDomain') ])
-            elsif rule["host"].include?('.')
-              hosts << rule["host"]
-            else
-              hosts << FnJoin("", [ rule["host"], ".", Ref('DnsDomain') ])
-            end
+
+              if rule["host"].kind_of?(Array)
+                rule["host"].each do |host|
+                  if host.include?('!DNSDomain')
+                    host_subdomain = host.gsub('!DNSDomain', '') #remove <DNSDomain>
+                    hosts << FnJoin("", [ host_subdomain , Ref('DnsDomain') ])
+                  elsif host.include?('.')
+                    hosts << host
+                  elsif host.kind_of?(Hash)
+                    hosts << host
+                  else
+                    hosts << FnJoin("", [ host, ".", Ref('DnsDomain') ])
+                  end
+                end
+              else
+                if rule["host"].include?('!DNSDomain')
+                  host_subdomain = rule["host"].gsub('!DNSDomain', '') #remove <DNSDomain>
+                  hosts << FnJoin("", [ host_subdomain , Ref('DnsDomain') ])
+                elsif rule["host"].include?('.')
+                  hosts << rule["host"]
+                elsif rule["host"].kind_of?(Hash)
+                    hosts << rule["host"]
+                else
+                  hosts << FnJoin("", [ rule["host"], ".", Ref('DnsDomain') ])
+                end
+              end
+
             listener_conditions << { Field: "host-header", Values: hosts }
           end
 
