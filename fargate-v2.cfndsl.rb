@@ -146,6 +146,7 @@ CloudFormation do
 
             listener_conditions << { Field: "host-header", Values: hosts }
           end
+          listener_conditions = rule["functions_filled_condition"] if rule.has_key?("functions_filled_condition")
 
           if rule.key?("name")
             rule_name = rule['name']
