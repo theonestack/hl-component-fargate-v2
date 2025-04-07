@@ -122,6 +122,7 @@ CloudFormation do
             end
             listener_conditions << { Field: "host-header", Values: hosts }
           end
+          listener_conditions = rule["custom_conditions"] if rule.has_key?("custom_conditions")
 
           if rule.key?("name")
             rule_name = rule['name']
@@ -142,6 +143,7 @@ CloudFormation do
           listener_rule_names << rule_name
 
           actions = [{ Type: "forward", Order: 5000, TargetGroupArn: Ref(targetgroup['resource_name'])}]
+          actions = rule["custom_actions"] if rule.has_key?("custom_actions")
           actions_with_cognito = actions + [cognito(Ref(:UserPoolId), Ref(:UserPoolClientId), Ref(:UserPoolDomainName))]
           
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
@@ -173,8 +175,6 @@ CloudFormation do
         TargetGroupArn: targetgroup_arn
       }
     end
-
-
 
   end
   
@@ -261,6 +261,4 @@ CloudFormation do
     end
   end
 
-
-  
 end
