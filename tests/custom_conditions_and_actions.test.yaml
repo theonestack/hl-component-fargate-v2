@@ -47,7 +47,7 @@ targetgroup:
               - Fn::Join:
                   - '.'
                   - - help  # Ref: HostRecord
-                  - '*'
+                    - '*'
               - Fn::Join:
                   - ''
                   - - stage # Ref: DnsPrefix
