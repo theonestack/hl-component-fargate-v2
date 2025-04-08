@@ -1,0 +1,56 @@
+test_metadata:
+  type: config
+  name: alb
+  description: Application Load Balancer task
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+targetgroup:
+  name: web
+  type: ip
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  rules:
+    -
+      priority: 1
+      custom_conditions:
+        - Field: host-header
+          Values:
+            - www.help.* # Ref: HostHeader
+      custom_actions:
+        - RedirectConfig:
+            Host: help.somesite.com # Ref: Apex
+            Path: "/#{path}"
+            Port: '443'
+            Protocol: HTTPS
+            Query: "#{query}"
+            StatusCode: HTTP_301
+          Type: redirect
+    -
+      priority: 2
+      custom_conditions:
+        - Field: source-ip
+          SourceIpConfig:
+            Values:
+              Fn::Split:
+                - ','
+                - 172.19.0.1,172.19.0.2 # Ref: SourceIPfilter
+        - Field: host-header
+          HostHeaderConfig:
+            Values:
+              - Fn::Join:
+                  - '.'
+                  - - help  # Ref: HostRecord
+                  - '*'
+              - Fn::Join:
+                  - ''
+                  - - stage # Ref: DnsPrefix
+                    - help  # Ref: HostRecord
+                    - '.'
+                    - '*'
