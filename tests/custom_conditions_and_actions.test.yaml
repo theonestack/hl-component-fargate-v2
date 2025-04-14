@@ -1,6 +1,6 @@
 test_metadata:
   type: config
-  name: alb
+  name: custom_conditions_and_actions
   description: Application Load Balancer task
 
 task_definition:
