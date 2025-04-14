@@ -1,6 +1,10 @@
-
 test_metadata:
   type: config
   name: default
   description: default config test
 
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
