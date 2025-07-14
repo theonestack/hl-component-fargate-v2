@@ -1,0 +1,10 @@
+test_metadata:
+  type: config
+  name: simple
+  description: minimal task with versionConsistency
+
+platform_version: '1.4.0'
+task_definition:
+  proxy:
+    image: nginx
+    version_consistency: disabled
