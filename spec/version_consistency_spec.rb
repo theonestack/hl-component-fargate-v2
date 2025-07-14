@@ -4,11 +4,11 @@ describe 'compiled component fargate-v2' do
   
   context 'cftest' do
     it 'compiles test' do
-      expect(system("cfhighlander cftest #{@validate} --tests tests/simple.test.yaml")).to be_truthy
+      expect(system("cfhighlander cftest #{@validate} --tests tests/version_consistency.test.yaml")).to be_truthy
     end      
   end
   
-  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/simple/fargate-v2.compiled.yaml") }
+  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/version_consistency/fargate-v2.compiled.yaml") }
   
   context "Resource" do
 

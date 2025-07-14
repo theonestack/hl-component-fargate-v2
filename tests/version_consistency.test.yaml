@@ -1,7 +1,7 @@
 test_metadata:
   type: config
-  name: simple
-  description: minimal task with versionConsistency
+  name: version_consistency
+  description: minimal task with VersionConsistency
 
 platform_version: '1.4.0'
 task_definition:
