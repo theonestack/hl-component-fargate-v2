@@ -90,6 +90,10 @@ describe 'compiled component fargate-v2' do
       it "is of type AWS::ECS::Service" do
           expect(resource["Type"]).to eq("AWS::ECS::Service")
       end
+
+      it "Depends on Listener Rule" do
+        expect(resource["DependsOn"]).to eq(["TargetRule10"])
+    end
       
       it "to have property Cluster" do
           expect(resource["Properties"]["Cluster"]).to eq({"Ref"=>"EcsCluster"})
@@ -192,7 +196,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property ContainerDefinitions" do
-          expect(resource["Properties"]["ContainerDefinitions"]).to eq([{"Name"=>"proxy", "Image"=>{"Fn::Join"=>["", ["", "nginx", ":", "latest"]]}, "LogConfiguration"=>{"LogDriver"=>"awslogs", "Options"=>{"awslogs-group"=>{"Ref"=>"LogGroup"}, "awslogs-region"=>{"Ref"=>"AWS::Region"}, "awslogs-stream-prefix"=>"proxy"}}, "PortMappings"=>[{"ContainerPort"=>80}]}])
+          expect(resource["Properties"]["ContainerDefinitions"]).to eq([{"Name"=>"proxy", "Image"=>{"Fn::Join"=>["", [{"Fn::Sub"=>"nginx"}, ":", "latest"]]}, "LogConfiguration"=>{"LogDriver"=>"awslogs", "Options"=>{"awslogs-group"=>{"Ref"=>"LogGroup"}, "awslogs-region"=>{"Ref"=>"AWS::Region"}, "awslogs-stream-prefix"=>"proxy"}}, "PortMappings"=>[{"ContainerPort"=>80}]}])
       end
       
       it "to have property RequiresCompatibilities" do

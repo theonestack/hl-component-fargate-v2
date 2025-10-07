@@ -4,11 +4,11 @@ describe 'compiled component fargate-v2' do
   
   context 'cftest' do
     it 'compiles test' do
-      expect(system("cfhighlander cftest #{@validate} --tests tests/secrets.test.yaml")).to be_truthy
+      expect(system("cfhighlander cftest #{@validate} --tests tests/custom_conditions_and_actions.test.yaml")).to be_truthy
     end      
   end
   
-  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/secrets/fargate-v2.compiled.yaml") }
+  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/custom_conditions_and_actions/fargate-v2.compiled.yaml") }
   
   context "Resource" do
 
@@ -30,12 +30,70 @@ describe 'compiled component fargate-v2' do
       
     end
     
+    context "TaskTargetGroup" do
+      let(:resource) { template["Resources"]["TaskTargetGroup"] }
+
+      it "is of type AWS::ElasticLoadBalancingV2::TargetGroup" do
+          expect(resource["Type"]).to eq("AWS::ElasticLoadBalancingV2::TargetGroup")
+      end
+      
+      it "to have property Port" do
+          expect(resource["Properties"]["Port"]).to eq(80)
+      end
+      
+      it "to have property Protocol" do
+          expect(resource["Properties"]["Protocol"]).to eq("HTTP")
+      end
+      
+      it "to have property VpcId" do
+          expect(resource["Properties"]["VpcId"]).to eq({"Ref"=>"VPCId"})
+      end
+      
+      it "to have property TargetType" do
+          expect(resource["Properties"]["TargetType"]).to eq("ip")
+      end
+      
+      it "to have property Tags" do
+          expect(resource["Properties"]["Tags"]).to eq([{"Key"=>"Environment", "Value"=>{"Ref"=>"EnvironmentName"}}, {"Key"=>"EnvironmentType", "Value"=>{"Ref"=>"EnvironmentType"}}])
+      end
+      
+    end
+    
+    context "TargetRule1" do
+      let(:resource) { template["Resources"]["TargetRule1"] }
+
+      it "is of type AWS::ElasticLoadBalancingV2::ListenerRule" do
+          expect(resource["Type"]).to eq("AWS::ElasticLoadBalancingV2::ListenerRule")
+      end
+      
+      it "to have property Actions" do
+          expect(resource["Properties"]["Actions"]).to eq({"Fn::If" => ["EnableCognito", [{"RedirectConfig"=>{"Host"=>"help.somesite.com", "Path"=>"/\#{path}", "Port"=>"443", "Protocol"=>"HTTPS", "Query"=>"\#{query}", "StatusCode"=>"HTTP_301"}, "Type"=>"redirect"}, {"AuthenticateCognitoConfig"=>{"UserPoolArn"=>{"Ref"=>"UserPoolId"}, "UserPoolClientId"=>{"Ref"=>"UserPoolClientId"}, "UserPoolDomain"=>{"Ref"=>"UserPoolDomainName"}}, "Order"=>1, "Type"=>"authenticate-cognito"}], [{"RedirectConfig"=>{"Host"=>"help.somesite.com", "Path"=>"/\#{path}", "Port"=>"443", "Protocol"=>"HTTPS", "Query"=>"\#{query}", "StatusCode"=>"HTTP_301"}, "Type"=>"redirect"}]],})
+      end
+      
+      it "to have property Conditions" do
+          expect(resource["Properties"]["Conditions"]).to eq([{"Field"=>"host-header", "Values"=>["www.help.*"]}])
+      end
+      
+      it "to have property ListenerArn" do
+          expect(resource["Properties"]["ListenerArn"]).to eq({"Ref"=>"Listener"})
+      end
+      
+      it "to have property Priority" do
+          expect(resource["Properties"]["Priority"]).to eq(1)
+      end
+      
+    end
+    
     context "EcsFargateService" do
       let(:resource) { template["Resources"]["EcsFargateService"] }
 
       it "is of type AWS::ECS::Service" do
           expect(resource["Type"]).to eq("AWS::ECS::Service")
       end
+
+      it "Depends on Listener Rule" do
+        expect(resource["DependsOn"]).to eq(["TargetRule1","TargetRule2"])
+    end
       
       it "to have property Cluster" do
           expect(resource["Properties"]["Cluster"]).to eq({"Ref"=>"EcsCluster"})
@@ -59,6 +117,10 @@ describe 'compiled component fargate-v2' do
       
       it "to have property LaunchType" do
           expect(resource["Properties"]["LaunchType"]).to eq("FARGATE")
+      end
+      
+      it "to have property LoadBalancers" do
+          expect(resource["Properties"]["LoadBalancers"]).to eq([{"ContainerName"=>"nginx", "ContainerPort"=>80, "TargetGroupArn"=>{"Ref"=>"TaskTargetGroup"}}])
       end
       
       it "to have property NetworkConfiguration" do
@@ -100,7 +162,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property Policies" do
-          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"fargate_default_policy", "PolicyDocument"=>{"Version"=>"2012-10-17", "Statement"=>[{"Sid"=>"fargatedefaultpolicy", "Action"=>["logs:GetLogEvents"], "Resource"=>[{"Fn::GetAtt"=>["LogGroup", "Arn"]}], "Effect"=>"Allow"}]}}])
+          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"fargate_default_policy", "PolicyDocument"=>{"Version"=>"2012-10-17","Statement"=>[{"Sid"=>"fargatedefaultpolicy", "Action"=>["logs:GetLogEvents"], "Resource"=>[{"Fn::GetAtt"=>["LogGroup", "Arn"]}], "Effect"=>"Allow"}]}}])
       end
       
     end
@@ -124,10 +186,6 @@ describe 'compiled component fargate-v2' do
           expect(resource["Properties"]["ManagedPolicyArns"]).to eq(["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"])
       end
       
-      it "to have property Policies" do
-          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"ssm-secrets", "PolicyDocument"=>{"Version"=>"2012-10-17", "Statement"=>[{"Sid"=>"ssmsecrets", "Action"=>"ssm:GetParameters", "Resource"=>[{"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EnvironmentName}/app/MY_SECRET"}, "arn:aws:ssm:eu-central-1:012345678990:parameter/app/YOUR_SECRET"], "Effect"=>"Allow"}]}}])
-      end
-      
     end
     
     context "Task" do
@@ -138,7 +196,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property ContainerDefinitions" do
-          expect(resource["Properties"]["ContainerDefinitions"]).to eq([{"Name"=>"proxy", "Image"=>{"Fn::Join"=>["", [{"Fn::Sub"=>"nginx"}, ":", "latest"]]}, "LogConfiguration"=>{"LogDriver"=>"awslogs", "Options"=>{"awslogs-group"=>{"Ref"=>"LogGroup"}, "awslogs-region"=>{"Ref"=>"AWS::Region"}, "awslogs-stream-prefix"=>"proxy"}}, "Secrets"=>[{"Name"=>"MY_SECRET", "ValueFrom"=>{"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EnvironmentName}/app/MY_SECRET"}}, {"Name"=>"YOUR_SECRET", "ValueFrom"=>"arn:aws:ssm:eu-central-1:012345678990:parameter/app/YOUR_SECRET"}]}])
+          expect(resource["Properties"]["ContainerDefinitions"]).to eq([{"Name"=>"proxy", "Image"=>{"Fn::Join"=>["", [{"Fn::Sub"=>"nginx"}, ":", "latest"]]}, "LogConfiguration"=>{"LogDriver"=>"awslogs", "Options"=>{"awslogs-group"=>{"Ref"=>"LogGroup"}, "awslogs-region"=>{"Ref"=>"AWS::Region"}, "awslogs-stream-prefix"=>"proxy"}}, "PortMappings"=>[{"ContainerPort"=>80}]}])
       end
       
       it "to have property RequiresCompatibilities" do

@@ -4,11 +4,11 @@ describe 'compiled component fargate-v2' do
   
   context 'cftest' do
     it 'compiles test' do
-      expect(system("cfhighlander cftest #{@validate} --tests tests/secrets.test.yaml")).to be_truthy
+      expect(system("cfhighlander cftest #{@validate} --tests tests/version_consistency.test.yaml")).to be_truthy
     end      
   end
   
-  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/secrets/fargate-v2.compiled.yaml") }
+  let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/version_consistency/fargate-v2.compiled.yaml") }
   
   context "Resource" do
 
@@ -39,6 +39,10 @@ describe 'compiled component fargate-v2' do
       
       it "to have property Cluster" do
           expect(resource["Properties"]["Cluster"]).to eq({"Ref"=>"EcsCluster"})
+      end
+      
+      it "to have property PlatformVersion" do
+          expect(resource["Properties"]["PlatformVersion"]).to eq("1.4.0")
       end
       
       it "to have property DesiredCount" do
@@ -124,10 +128,6 @@ describe 'compiled component fargate-v2' do
           expect(resource["Properties"]["ManagedPolicyArns"]).to eq(["arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"])
       end
       
-      it "to have property Policies" do
-          expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"ssm-secrets", "PolicyDocument"=>{"Version"=>"2012-10-17", "Statement"=>[{"Sid"=>"ssmsecrets", "Action"=>"ssm:GetParameters", "Resource"=>[{"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EnvironmentName}/app/MY_SECRET"}, "arn:aws:ssm:eu-central-1:012345678990:parameter/app/YOUR_SECRET"], "Effect"=>"Allow"}]}}])
-      end
-      
     end
     
     context "Task" do
@@ -138,7 +138,7 @@ describe 'compiled component fargate-v2' do
       end
       
       it "to have property ContainerDefinitions" do
-          expect(resource["Properties"]["ContainerDefinitions"]).to eq([{"Name"=>"proxy", "Image"=>{"Fn::Join"=>["", [{"Fn::Sub"=>"nginx"}, ":", "latest"]]}, "LogConfiguration"=>{"LogDriver"=>"awslogs", "Options"=>{"awslogs-group"=>{"Ref"=>"LogGroup"}, "awslogs-region"=>{"Ref"=>"AWS::Region"}, "awslogs-stream-prefix"=>"proxy"}}, "Secrets"=>[{"Name"=>"MY_SECRET", "ValueFrom"=>{"Fn::Sub"=>"arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${EnvironmentName}/app/MY_SECRET"}}, {"Name"=>"YOUR_SECRET", "ValueFrom"=>"arn:aws:ssm:eu-central-1:012345678990:parameter/app/YOUR_SECRET"}]}])
+          expect(resource["Properties"]["ContainerDefinitions"]).to eq([{"Name"=>"proxy", "Image"=>{"Fn::Join"=>["", [{"Fn::Sub"=>"nginx"}, ":", "latest"]]}, "LogConfiguration"=>{"LogDriver"=>"awslogs", "Options"=>{"awslogs-group"=>{"Ref"=>"LogGroup"}, "awslogs-region"=>{"Ref"=>"AWS::Region"}, "awslogs-stream-prefix"=>"proxy"}}, "VersionConsistency"=>"disabled"}])
       end
       
       it "to have property RequiresCompatibilities" do
