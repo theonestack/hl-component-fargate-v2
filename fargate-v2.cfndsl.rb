@@ -71,16 +71,16 @@ CloudFormation do
 
     targetgroups.each do |targetgroup|
       if targetgroup.has_key?('rules')
-
         attributes = []
 
         targetgroup['attributes'].each do |key,value|
           attributes << { Key: key, Value: value }
         end if targetgroup.has_key?('attributes')
 
+        tg_tags = Marshal.load(Marshal.dump(fargate_tags))
         targetgroup['tags'].each do |key,value|
-          fargate_tags << { Key: key, Value: value }
-        end if targetgroup.has_key?('tags')
+          tg_tags << { Key: key, Value: value }
+        end if
 
         ElasticLoadBalancingV2_TargetGroup(targetgroup['resource_name']) do
           ## Required
@@ -102,7 +102,7 @@ CloudFormation do
           TargetType targetgroup['type'] if targetgroup.has_key?('type')
           TargetGroupAttributes attributes if attributes.any?
 
-          Tags fargate_tags if fargate_tags.any?
+          Tags tg_tags
         end
 
         targetgroup['rules'].each_with_index do |rule, index|
@@ -234,7 +234,7 @@ CloudFormation do
       TaskDefinition "Ref" => "Task" #Hack to work referencing child component resource
       HealthCheckGracePeriodSeconds health_check_grace_period unless health_check_grace_period.nil?
       LaunchType "FARGATE"
-      Tags fargate_tags if fargate_tags.any?
+      Tags fargate_tags
       PropagateTags 'SERVICE'
 
       if service_loadbalancer.any?
