@@ -185,6 +185,7 @@ CloudFormation do
 
   health_check_grace_period = external_parameters.fetch(:health_check_grace_period, nil)
   platform_version = external_parameters.fetch(:platform_version, nil)
+  availability_zone_rebalancing = external_parameters.fetch(:availability_zone_rebalancing, nil)
   deployment_circuit_breaker = external_parameters.fetch(:deployment_circuit_breaker, {}).transform_keys {|k| k.split('_').collect(&:capitalize).join }
   deployment_configuration = {
     MinimumHealthyPercent: Ref('MinimumHealthyPercent'),
@@ -233,6 +234,7 @@ CloudFormation do
       EnableExecuteCommand external_parameters.fetch(:enable_execute_command, false)
       TaskDefinition "Ref" => "Task" #Hack to work referencing child component resource
       HealthCheckGracePeriodSeconds health_check_grace_period unless health_check_grace_period.nil?
+      AvailabilityZoneRebalancing availability_zone_rebalancing unless availability_zone_rebalancing.nil?
       LaunchType "FARGATE"
       Tags fargate_tags
       PropagateTags 'SERVICE'

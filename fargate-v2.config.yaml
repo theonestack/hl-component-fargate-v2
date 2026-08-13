@@ -4,7 +4,7 @@ cpu: 256
 memory: 512
 
 service_namespace: null
-
+# availability_zone_rebalancing: ENABLED | DISABLED
 iam_policies:
   fargate_default_policy:
     action:

@@ -1,0 +1,12 @@
+
+test_metadata:
+  type: config
+  name: availability_zone_rebalancing
+  description: enable availability zone rebalancing
+
+platform_version: '1.4.0'
+task_definition:
+  proxy:
+    image: nginx
+
+availability_zone_rebalancing: ENABLED
