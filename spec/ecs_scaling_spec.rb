@@ -45,8 +45,10 @@ describe 'compiled component fargate-v2' do
           expect(resource["Properties"]["PlatformVersion"]).to eq("1.4.0")
       end
       
-      it "to not have property DesiredCount" do
-          expect(resource["Properties"]).not_to have_key("DesiredCount")
+      it "to have property DesiredCount that only drops to NoValue when scaling is enabled, retaining it otherwise" do
+          expect(resource["Properties"]["DesiredCount"]).to eq({
+            "Fn::If" => ["Enablefargatev2Scaling", { "Ref" => "AWS::NoValue" }, { "Ref" => "DesiredCount" }]
+          })
       end
       
       it "to have property DeploymentConfiguration" do
