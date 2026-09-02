@@ -16,6 +16,8 @@ CloudFormation do
     raise 'you must define a task_definition'
   end
 
+  service_namespace = external_parameters.fetch(:service_namespace, nil)
+
   EC2_SecurityGroup(:SecurityGroup) do
     VpcId Ref('VPCId')
     GroupDescription "#{external_parameters[:component_name]} fargate service"
@@ -229,7 +231,10 @@ CloudFormation do
       DependsOn(listener_rule_names) unless listener_rule_names.empty?
       Cluster Ref("EcsCluster")
       PlatformVersion platform_version unless platform_version.nil?
-      DesiredCount Ref('DesiredCount')
+      # When Application Auto Scaling owns this service (service_namespace set), DesiredCount is
+      # deliberately left unmanaged here so CloudFormation doesn't reset the live scaled count back
+      # to this static value on every deployment.
+      DesiredCount Ref('DesiredCount') if service_namespace.nil?
       DeploymentConfiguration deployment_configuration
       EnableExecuteCommand external_parameters.fetch(:enable_execute_command, false)
       TaskDefinition "Ref" => "Task" #Hack to work referencing child component resource

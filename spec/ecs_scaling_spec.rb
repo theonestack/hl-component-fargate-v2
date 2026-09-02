@@ -45,8 +45,8 @@ describe 'compiled component fargate-v2' do
           expect(resource["Properties"]["PlatformVersion"]).to eq("1.4.0")
       end
       
-      it "to have property DesiredCount" do
-          expect(resource["Properties"]["DesiredCount"]).to eq({"Ref"=>"DesiredCount"})
+      it "to not have property DesiredCount" do
+          expect(resource["Properties"]).not_to have_key("DesiredCount")
       end
       
       it "to have property DeploymentConfiguration" do
