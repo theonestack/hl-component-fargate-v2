@@ -16,6 +16,18 @@ CloudFormation do
     raise 'you must define a task_definition'
   end
 
+  service_namespace = external_parameters.fetch(:service_namespace, nil)
+
+  # Mirrors the name/condition cfhighlander derives for the conditional Scaling sub-component
+  # (fargate-v2.cfhighlander.rb, and lib/cfhighlander.dsl.subcomponent.rb's Subcomponent#initialize):
+  # name = "#{component_name}Scaling", cfn_name = name with '-'/'_'/' ' stripped, condition = "Enable#{cfn_name}".
+  # service_namespace only controls whether that sub-component (and this condition) is compiled in at
+  # all; EnableScaling itself defaults to false, so its ScalableTarget may not exist even when compiled.
+  unless service_namespace.nil?
+    scaling_cfn_name = "#{external_parameters[:component_name]}Scaling".gsub('-', '').gsub('_', '').gsub(' ', '')
+    scaling_condition = "Enable#{scaling_cfn_name}"
+  end
+
   EC2_SecurityGroup(:SecurityGroup) do
     VpcId Ref('VPCId')
     GroupDescription "#{external_parameters[:component_name]} fargate service"
@@ -229,7 +241,12 @@ CloudFormation do
       DependsOn(listener_rule_names) unless listener_rule_names.empty?
       Cluster Ref("EcsCluster")
       PlatformVersion platform_version unless platform_version.nil?
-      DesiredCount Ref('DesiredCount')
+      # Omit DesiredCount only while the ScalableTarget is actually enabled (EnableScaling condition
+      # true) - otherwise CloudFormation resets the live Auto Scaling-managed count on every deploy.
+      # When scaling isn't compiled in, or is compiled in but disabled, DesiredCount is retained as normal.
+      desired_count = Ref('DesiredCount')
+      desired_count = FnIf(scaling_condition, Ref('AWS::NoValue'), desired_count) unless service_namespace.nil?
+      DesiredCount desired_count
       DeploymentConfiguration deployment_configuration
       EnableExecuteCommand external_parameters.fetch(:enable_execute_command, false)
       TaskDefinition "Ref" => "Task" #Hack to work referencing child component resource
