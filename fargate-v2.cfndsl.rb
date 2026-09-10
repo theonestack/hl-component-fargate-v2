@@ -383,7 +383,7 @@ CloudFormation do
         Namespace scale_up_policy['namespace'] || default_alarm['namespace']
         Statistic scale_up_policy['statistic'] || default_alarm['statistic']
         Period (scale_up_policy['period'] || default_alarm['period']).to_s
-        EvaluationPeriods scale_up_policy['evaluation_periods'].to_s
+        EvaluationPeriods (scale_up_policy['evaluation_periods'] || default_alarm['evaluation_periods']).to_s
         Threshold scale_up_policy['threshold'].to_s
         AlarmActions [Ref(logical_scaling_policy_name)]
         ComparisonOperator 'GreaterThanThreshold'
