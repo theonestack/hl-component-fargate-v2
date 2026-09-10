@@ -416,7 +416,7 @@ CloudFormation do
         Namespace scale_down_policy['namespace'] || default_alarm['namespace']
         Statistic scale_down_policy['statistic'] || default_alarm['statistic']
         Period (scale_down_policy['period'] || default_alarm['period']).to_s
-        EvaluationPeriods scale_down_policy['evaluation_periods'].to_s
+        EvaluationPeriods (scale_down_policy['evaluation_periods'] || default_alarm['evaluation_periods']).to_s
         Threshold scale_down_policy['threshold'].to_s
         AlarmActions [Ref(logical_scaling_policy_name)]
         ComparisonOperator 'LessThanThreshold'
@@ -435,11 +435,11 @@ CloudFormation do
         ScalingTargetId Ref(:ServiceScalingTarget)
         TargetTrackingScalingPolicyConfiguration do
           TargetValue scale_target_policy['target_value']
-          ScaleInCooldown scale_target_policy['scale_in_cooldown'].to_s
-          ScaleOutCooldown scale_target_policy['scale_out_cooldown'].to_s
+          ScaleInCooldown scale_target_policy['scale_in_cooldown'].to_s unless scale_target_policy['scale_in_cooldown'].nil?
+          ScaleOutCooldown scale_target_policy['scale_out_cooldown'].to_s unless scale_target_policy['scale_out_cooldown'].nil?
           PredefinedMetricSpecification do
             PredefinedMetricType scale_target_policy['metric_type'] || 'ECSServiceAverageCPUUtilization'
-          end unless scale_target_policy['metric_type'].nil?
+          end if scale_target_policy['custom'].nil?
           CustomizedMetricSpecification do
             Namespace scale_target_policy['custom']['namespace']
             MetricName scale_target_policy['custom']['metric_name']
