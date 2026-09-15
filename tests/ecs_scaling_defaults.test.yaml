@@ -15,9 +15,15 @@ scaling_policy:
   up:
     adjustment: 2
     threshold: 70
+    dimensions:
+      - Name: QueueName
+        Value: my-queue
   down:
     adjustment: -1
     threshold: 70
+    dimentions:
+      - Name: QueueName
+        Value: my-queue
   target:
     - target_value: 50
     - target_value: 75

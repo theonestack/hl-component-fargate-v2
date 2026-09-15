@@ -387,7 +387,7 @@ CloudFormation do
         Threshold scale_up_policy['threshold'].to_s
         AlarmActions [Ref(logical_scaling_policy_name)]
         ComparisonOperator 'GreaterThanThreshold'
-        Dimensions scale_up_policy['dimentions'] || default_alarm['dimentions']
+        Dimensions scale_up_policy['dimensions'] || scale_up_policy['dimentions'] || default_alarm['dimentions']
         Condition scaling_condition
       end
     end unless scaling_policy['up'].nil?
@@ -420,7 +420,7 @@ CloudFormation do
         Threshold scale_down_policy['threshold'].to_s
         AlarmActions [Ref(logical_scaling_policy_name)]
         ComparisonOperator 'LessThanThreshold'
-        Dimensions scale_down_policy['dimentions'] || default_alarm['dimentions']
+        Dimensions scale_down_policy['dimensions'] || scale_down_policy['dimentions'] || default_alarm['dimentions']
         Condition scaling_condition
       end
     end unless scaling_policy['down'].nil?

@@ -27,6 +27,10 @@ describe 'compiled component fargate-v2' do
           expect(resource["Properties"]["EvaluationPeriods"]).to eq("5")
       end
 
+      it "accepts the correctly-spelled dimensions option" do
+          expect(resource["Properties"]["Dimensions"]).to eq([{"Name" => "QueueName", "Value" => "my-queue"}])
+      end
+
       it "is gated by the Enablefargatev2Scaling condition" do
           expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
       end
@@ -38,6 +42,10 @@ describe 'compiled component fargate-v2' do
 
       it "falls back to the default EvaluationPeriods when omitted" do
           expect(resource["Properties"]["EvaluationPeriods"]).to eq("5")
+      end
+
+      it "still accepts the legacy dimentions spelling for backward compatibility" do
+          expect(resource["Properties"]["Dimensions"]).to eq([{"Name" => "QueueName", "Value" => "my-queue"}])
       end
 
       it "is gated by the Enablefargatev2Scaling condition" do
