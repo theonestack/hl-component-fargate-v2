@@ -9,7 +9,15 @@ describe 'compiled component fargate-v2' do
   end
   
   let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/ecs_scaling/fargate-v2.compiled.yaml") }
-  
+
+  context "Conditions" do
+
+    it "defines Enablefargatev2Scaling to mirror the removed sub-component's enable parameter" do
+        expect(template["Conditions"]["Enablefargatev2Scaling"]).to eq({"Fn::Equals" => [{"Ref" => "Enablefargatev2Scaling"}, "true"]})
+    end
+
+  end
+
   context "Resource" do
 
     
@@ -191,9 +199,13 @@ describe 'compiled component fargate-v2' do
       it "to have property Policies" do
           expect(resource["Properties"]["Policies"]).to eq([{"PolicyName"=>"ecs-scaling", "PolicyDocument"=>{"Statement"=>[{"Effect"=>"Allow", "Action"=>["cloudwatch:DescribeAlarms", "cloudwatch:PutMetricAlarm", "cloudwatch:DeleteAlarms"], "Resource"=>"*"}, {"Effect"=>"Allow", "Action"=>["ecs:UpdateService", "ecs:DescribeServices"], "Resource"=>{"Ref"=>"EcsFargateService"}}]}}])
       end
-      
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
-    
+
     context "ServiceScalingTarget" do
       let(:resource) { template["Resources"]["ServiceScalingTarget"] }
 
@@ -224,9 +236,13 @@ describe 'compiled component fargate-v2' do
       it "to have property ServiceNamespace" do
           expect(resource["Properties"]["ServiceNamespace"]).to eq("ecs")
       end
-      
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
-    
+
     context "ServiceScalingUpPolicy" do
       let(:resource) { template["Resources"]["ServiceScalingUpPolicy"] }
 
@@ -249,9 +265,13 @@ describe 'compiled component fargate-v2' do
       it "to have property StepScalingPolicyConfiguration" do
           expect(resource["Properties"]["StepScalingPolicyConfiguration"]).to eq({"AdjustmentType"=>"ChangeInCapacity", "Cooldown"=>150, "MetricAggregationType"=>"Average", "StepAdjustments"=>[{"ScalingAdjustment"=>"2", "MetricIntervalLowerBound"=>0}]})
       end
-      
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
-    
+
     context "ServiceScaleUpAlarm" do
       let(:resource) { template["Resources"]["ServiceScaleUpAlarm"] }
 
@@ -298,9 +318,13 @@ describe 'compiled component fargate-v2' do
       it "to have property Dimensions" do
           expect(resource["Properties"]["Dimensions"]).to eq([{"Name"=>"ServiceName", "Value"=>{"Fn::Select"=>[2, {"Fn::Split"=>["/", {"Ref"=>"EcsFargateService"}]}]}}, {"Name"=>"ClusterName", "Value"=>{"Fn::Select"=>[1, {"Fn::Split"=>["/", {"Ref"=>"EcsFargateService"}]}]}}])
       end
-      
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
-    
+
     context "ServiceScalingDownPolicy" do
       let(:resource) { template["Resources"]["ServiceScalingDownPolicy"] }
 
@@ -323,9 +347,13 @@ describe 'compiled component fargate-v2' do
       it "to have property StepScalingPolicyConfiguration" do
           expect(resource["Properties"]["StepScalingPolicyConfiguration"]).to eq({"AdjustmentType"=>"ChangeInCapacity", "Cooldown"=>600, "MetricAggregationType"=>"Average", "StepAdjustments"=>[{"ScalingAdjustment"=>"-1", "MetricIntervalUpperBound"=>0}]})
       end
-      
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
-    
+
     context "ServiceScaleDownAlarm" do
       let(:resource) { template["Resources"]["ServiceScaleDownAlarm"] }
 
@@ -372,9 +400,13 @@ describe 'compiled component fargate-v2' do
       it "to have property Dimensions" do
           expect(resource["Properties"]["Dimensions"]).to eq([{"Name"=>"ServiceName", "Value"=>{"Fn::Select"=>[2, {"Fn::Split"=>["/", {"Ref"=>"EcsFargateService"}]}]}}, {"Name"=>"ClusterName", "Value"=>{"Fn::Select"=>[1, {"Fn::Split"=>["/", {"Ref"=>"EcsFargateService"}]}]}}])
       end
-      
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
-    
+
   end
 
 end

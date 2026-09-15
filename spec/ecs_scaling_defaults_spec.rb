@@ -10,6 +10,14 @@ describe 'compiled component fargate-v2' do
 
   let(:template) { YAML.load_file("#{File.dirname(__FILE__)}/../out/tests/ecs_scaling_defaults/fargate-v2.compiled.yaml") }
 
+  context "Conditions" do
+
+    it "defines Enablefargatev2Scaling to mirror the removed sub-component's enable parameter" do
+        expect(template["Conditions"]["Enablefargatev2Scaling"]).to eq({"Fn::Equals" => [{"Ref" => "Enablefargatev2Scaling"}, "true"]})
+    end
+
+  end
+
   context "Resource" do
 
     context "ServiceScaleUpAlarm" do
@@ -17,6 +25,10 @@ describe 'compiled component fargate-v2' do
 
       it "falls back to the default EvaluationPeriods when omitted" do
           expect(resource["Properties"]["EvaluationPeriods"]).to eq("5")
+      end
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
       end
 
     end
@@ -28,6 +40,10 @@ describe 'compiled component fargate-v2' do
           expect(resource["Properties"]["EvaluationPeriods"]).to eq("5")
       end
 
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
 
     context "ServiceScalingUpPolicy" do
@@ -37,6 +53,10 @@ describe 'compiled component fargate-v2' do
           expect(resource["Properties"]["StepScalingPolicyConfiguration"]["Cooldown"]).to eq(300)
       end
 
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
 
     context "ServiceScalingDownPolicy" do
@@ -44,6 +64,10 @@ describe 'compiled component fargate-v2' do
 
       it "falls back to the default scale-down Cooldown when omitted" do
           expect(resource["Properties"]["StepScalingPolicyConfiguration"]["Cooldown"]).to eq(900)
+      end
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
       end
 
     end
@@ -72,6 +96,10 @@ describe 'compiled component fargate-v2' do
           expect(config).not_to have_key("CustomizedMetricSpecification")
       end
 
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
+      end
+
     end
 
     context "ServiceTargetTrackingPolicy2" do
@@ -88,6 +116,10 @@ describe 'compiled component fargate-v2' do
 
       it "does not emit a PredefinedMetricSpecification when a custom metric is configured" do
           expect(config).not_to have_key("PredefinedMetricSpecification")
+      end
+
+      it "is gated by the Enablefargatev2Scaling condition" do
+          expect(resource["Condition"]).to eq("Enablefargatev2Scaling")
       end
 
     end
