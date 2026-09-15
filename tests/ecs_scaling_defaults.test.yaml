@@ -1,0 +1,33 @@
+
+test_metadata:
+  type: config
+  name: ecs_scaling_defaults
+  description: scaling policy optional fields fall back to their documented defaults when omitted
+
+platform_version: '1.4.0'
+task_definition:
+  proxy:
+    image: nginx
+
+service_namespace: ecs
+
+scaling_policy:
+  up:
+    adjustment: 2
+    threshold: 70
+    dimensions:
+      - Name: QueueName
+        Value: my-queue
+  down:
+    adjustment: -1
+    threshold: 70
+    dimentions:
+      - Name: QueueName
+        Value: my-queue
+  target:
+    - target_value: 50
+    - target_value: 75
+      custom:
+        namespace: Custom/App
+        metric_name: QueueDepth
+        statistic: Average
