@@ -31,6 +31,13 @@ CfhighlanderTemplate do
         ComponentParam 'Listener'
         ComponentParam 'LoadBalancer'
       end
+
+      # A rule with `condition: <Name>` is only created when the <Name> parameter is 'true'.
+      # Rules may share a condition, so each parameter is only declared once.
+      [targetgroup].flatten.flat_map { |tg| tg.fetch('rules', []) }
+        .map { |rule| rule['condition'] }.compact.uniq.each do |condition|
+        ComponentParam condition, 'true', allowedValues: %w(true false)
+      end
     end
 
     ComponentParam 'DesiredCount', 1

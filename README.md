@@ -62,6 +62,18 @@ targetgroup:
       priority: 10
 ```
 
+#### Conditional Listener Rules
+
+Add `condition` to a rule to create it only when a stack parameter of that name is `true`. The component adds the parameter (default `true`, allowed values `true`/`false`) and a matching CloudFormation Condition. Rules can share a condition.
+
+```yaml
+  rules:
+    -
+      path: /admin/*
+      priority: 20
+      condition: EnableAdminRule
+```
+
 ## Outputs/Exports
 
 | Name | Value | Exported |

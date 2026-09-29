@@ -64,6 +64,8 @@ CloudFormation do
 
   service_loadbalancer = []
   listener_rule_names = []
+  # rule_name => condition, for rules that are only created when their condition is true
+  conditional_listener_rules = {}
   targetgroups = external_parameters.fetch(:targetgroup, {})
   multiplie_target_groups =  targetgroups.is_a?(Array)
   unless targetgroups.empty?
@@ -152,13 +154,19 @@ CloudFormation do
             end
           end
 
-          listener_rule_names << rule_name
+          rule_condition = rule['condition']
+          if rule_condition.nil?
+            listener_rule_names << rule_name
+          else
+            conditional_listener_rules[rule_name] = rule_condition
+          end
 
           actions = [{ Type: "forward", Order: 5000, TargetGroupArn: Ref(targetgroup['resource_name'])}]
           actions = rule["custom_actions"] if rule.has_key?("custom_actions")
           actions_with_cognito = actions + [cognito(Ref(:UserPoolId), Ref(:UserPoolClientId), Ref(:UserPoolDomainName))]
           
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
+            Condition rule_condition unless rule_condition.nil?
             Actions FnIf(:EnableCognito, actions_with_cognito, actions)
             Conditions listener_conditions
             ListenerArn Ref(targetgroup['listener_resource'])
@@ -189,7 +197,22 @@ CloudFormation do
     end
 
   end
-  
+
+  unless conditional_listener_rules.empty?
+    conditional_listener_rules.values.uniq.each do |condition|
+      Condition(condition.to_sym, FnEquals(Ref(condition), 'true'))
+    end
+
+    # DependsOn can't target a resource that may not exist, so the service depends on this
+    # always-created handle instead, which references each conditional rule only when it's created.
+    CloudFormation_WaitConditionHandle(:ConditionalListenerRules) do
+      Metadata(conditional_listener_rules.map { |rule_name, condition|
+        [rule_name, FnIf(condition, Ref(rule_name), '')]
+      }.to_h)
+    end
+    listener_rule_names << 'ConditionalListenerRules'
+  end
+
   targetgroups = external_parameters.fetch(:targetgroups, [])
   unless targetgroups.empty?
     
