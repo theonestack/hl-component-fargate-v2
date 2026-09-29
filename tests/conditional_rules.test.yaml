@@ -1,0 +1,30 @@
+test_metadata:
+  type: config
+  name: conditional_rules
+  description: Listener rules that are only created when their condition parameter is true
+
+task_definition:
+  proxy:
+    image: nginx
+    ports:
+      - 80
+
+targetgroup:
+  name: web
+  type: ip
+  container: nginx
+  port: 80
+  protocol: http
+  listener: http
+  rules:
+    -
+      host: www.*
+      priority: 10
+    -
+      path: /admin/*
+      priority: 20
+      condition: EnableAdminRule
+    -
+      path: /internal/*
+      priority: 30
+      condition: EnableAdminRule
