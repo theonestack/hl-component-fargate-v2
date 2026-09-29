@@ -18,14 +18,14 @@ CloudFormation do
 
   service_namespace = external_parameters.fetch(:service_namespace, nil)
 
-  # Mirrors the name/condition cfhighlander derives for the conditional Scaling sub-component
-  # (fargate-v2.cfhighlander.rb, and lib/cfhighlander.dsl.subcomponent.rb's Subcomponent#initialize):
-  # name = "#{component_name}Scaling", cfn_name = name with '-'/'_'/' ' stripped, condition = "Enable#{cfn_name}".
-  # service_namespace only controls whether that sub-component (and this condition) is compiled in at
-  # all; EnableScaling itself defaults to false, so its ScalableTarget may not exist even when compiled.
-  unless service_namespace.nil?
+  # Mirrors the name/condition cfhighlander used to derive for the (now removed) conditional
+  # application-autoscaling sub-component: name = "#{component_name}Scaling", cfn_name = name with
+  # '-'/'_'/' ' stripped, condition = "Enable#{cfn_name}". EnableScaling defaults to false, so the
+  # ScalableTarget and friends below may not exist even when service_namespace is 'ecs'.
+  if service_namespace == 'ecs'
     scaling_cfn_name = "#{external_parameters[:component_name]}Scaling".gsub('-', '').gsub('_', '').gsub(' ', '')
     scaling_condition = "Enable#{scaling_cfn_name}"
+    Condition(scaling_condition.to_sym, FnEquals(Ref(scaling_condition), 'true'))
   end
 
   EC2_SecurityGroup(:SecurityGroup) do
@@ -64,6 +64,8 @@ CloudFormation do
 
   service_loadbalancer = []
   listener_rule_names = []
+  # rule_name => condition, for rules that are only created when their condition is true
+  conditional_listener_rules = {}
   targetgroups = external_parameters.fetch(:targetgroup, {})
   multiplie_target_groups =  targetgroups.is_a?(Array)
   unless targetgroups.empty?
@@ -152,13 +154,19 @@ CloudFormation do
             end
           end
 
-          listener_rule_names << rule_name
+          rule_condition = rule['condition']
+          if rule_condition.nil?
+            listener_rule_names << rule_name
+          else
+            conditional_listener_rules[rule_name] = rule_condition
+          end
 
           actions = [{ Type: "forward", Order: 5000, TargetGroupArn: Ref(targetgroup['resource_name'])}]
           actions = rule["custom_actions"] if rule.has_key?("custom_actions")
           actions_with_cognito = actions + [cognito(Ref(:UserPoolId), Ref(:UserPoolClientId), Ref(:UserPoolDomainName))]
           
           ElasticLoadBalancingV2_ListenerRule(rule_name) do
+            Condition rule_condition unless rule_condition.nil?
             Actions FnIf(:EnableCognito, actions_with_cognito, actions)
             Conditions listener_conditions
             ListenerArn Ref(targetgroup['listener_resource'])
@@ -189,7 +197,22 @@ CloudFormation do
     end
 
   end
-  
+
+  unless conditional_listener_rules.empty?
+    conditional_listener_rules.values.uniq.each do |condition|
+      Condition(condition.to_sym, FnEquals(Ref(condition), 'true'))
+    end
+
+    # DependsOn can't target a resource that may not exist, so the service depends on this
+    # always-created handle instead, which references each conditional rule only when it's created.
+    CloudFormation_WaitConditionHandle(:ConditionalListenerRules) do
+      Metadata(conditional_listener_rules.map { |rule_name, condition|
+        [rule_name, FnIf(condition, Ref(rule_name), '')]
+      }.to_h)
+    end
+    listener_rule_names << 'ConditionalListenerRules'
+  end
+
   targetgroups = external_parameters.fetch(:targetgroups, [])
   unless targetgroups.empty?
     
@@ -245,7 +268,7 @@ CloudFormation do
       # true) - otherwise CloudFormation resets the live Auto Scaling-managed count on every deploy.
       # When scaling isn't compiled in, or is compiled in but disabled, DesiredCount is retained as normal.
       desired_count = Ref('DesiredCount')
-      desired_count = FnIf(scaling_condition, Ref('AWS::NoValue'), desired_count) unless service_namespace.nil?
+      desired_count = FnIf(scaling_condition, Ref('AWS::NoValue'), desired_count) if service_namespace == 'ecs'
       DesiredCount desired_count
       DeploymentConfiguration deployment_configuration
       EnableExecuteCommand external_parameters.fetch(:enable_execute_command, false)
@@ -278,6 +301,179 @@ CloudFormation do
       Value(FnGetAtt('EcsFargateService', 'Name'))
       Export FnSub("${EnvironmentName}-#{export}-ServiceName")
     end
+  end
+
+  # Application Auto Scaling for the ECS service. Inlined from the former application-autoscaling /
+  # ecs-scaling components so this component no longer depends on them externally. Every resource here
+  # carries the same scaling_condition, matching how cfhighlander conditionally-inlined those components.
+  if service_namespace == 'ecs'
+    scaling_policy = external_parameters.fetch(:scaling_policy, {})
+
+    IAM_Role(:ServiceECSAutoScaleRole) do
+      AssumeRolePolicyDocument service_assume_role_policy('application-autoscaling')
+      Path '/'
+      Policies ([
+        PolicyName: 'ecs-scaling',
+        PolicyDocument: {
+          Statement: [
+            {
+              Effect: "Allow",
+              Action: ['cloudwatch:DescribeAlarms','cloudwatch:PutMetricAlarm','cloudwatch:DeleteAlarms'],
+              Resource: "*"
+            },
+            {
+              Effect: "Allow",
+              Action: ['ecs:UpdateService','ecs:DescribeServices'],
+              Resource: Ref(:EcsFargateService)
+            }
+          ]
+      }])
+      Condition scaling_condition
+    end
+
+    ecs_cluster = FnSelect(1, FnSplit('/', Ref(:EcsFargateService)))
+    service_name = FnSelect(2, FnSplit('/', Ref(:EcsFargateService)))
+    scheduled_actions = []
+
+    scaling_policy['scheduled_actions'].each do | a |
+      action = {
+        'ScalableTargetAction' => {
+          'MaxCapacity' => a['max_capacity'],
+          'MinCapacity' => a['min_capacity']
+        },
+        'Schedule' => a['schedule'],
+        'ScheduledActionName' => FnJoin( '-', [ "service", ecs_cluster, service_name, "scheduled-action-#{scheduled_actions.length + 1}" ] )
+      }
+      action[:Timezone] = scaling_policy['timezone'] if scaling_policy.key? 'timezone'
+      scheduled_actions << action
+    end if scaling_policy.key? 'scheduled_actions'
+
+    ApplicationAutoScaling_ScalableTarget(:ServiceScalingTarget) do
+      MaxCapacity Ref("#{scaling_cfn_name}Max")
+      MinCapacity Ref("#{scaling_cfn_name}Min")
+      ResourceId FnJoin( '', [ "service/", ecs_cluster, "/",  service_name ] )
+      RoleARN FnGetAtt(:ServiceECSAutoScaleRole,:Arn)
+      ScalableDimension "ecs:service:DesiredCount"
+      ServiceNamespace "ecs"
+      ScheduledActions scheduled_actions if scheduled_actions.length > 0
+      Condition scaling_condition
+    end
+
+    default_alarm = {}
+    default_alarm['metric_name'] = 'CPUUtilization'
+    default_alarm['namespace'] = 'AWS/ECS'
+    default_alarm['statistic'] = 'Average'
+    default_alarm['period'] = '60'
+    default_alarm['evaluation_periods'] = '5'
+    default_alarm['dimentions'] = [
+      { Name: 'ServiceName', Value: service_name},
+      { Name: 'ClusterName', Value: ecs_cluster}
+    ]
+
+    if scaling_policy['up'].kind_of?(Hash)
+      scaling_policy['up'] = [scaling_policy['up']]
+    end
+
+    if scaling_policy['down'].kind_of?(Hash)
+      scaling_policy['down'] = [scaling_policy['down']]
+    end
+
+    if scaling_policy['target'].kind_of?(Hash)
+      scaling_policy['target'] = [scaling_policy['target']]
+    end
+
+    scaling_policy['up'].each_with_index do |scale_up_policy, i|
+      logical_scaling_policy_name = "ServiceScalingUpPolicy"  + (i > 0 ? "#{i+1}" : "")
+      logical_alarm_name          = "ServiceScaleUpAlarm"     + (i > 0 ? "#{i+1}" : "")
+      policy_name                 = "scale-up-policy"         + (i > 0 ? "-#{i+1}" : "")
+
+      ApplicationAutoScaling_ScalingPolicy(logical_scaling_policy_name) do
+        PolicyName FnJoin('-', [ Ref('EnvironmentName'), 'autoscaling', policy_name])
+        PolicyType "StepScaling"
+        ScalingTargetId Ref(:ServiceScalingTarget)
+        StepScalingPolicyConfiguration({
+          AdjustmentType: "ChangeInCapacity",
+          Cooldown: scale_up_policy['cooldown'] || 300,
+          MetricAggregationType: "Average",
+          StepAdjustments: [{ ScalingAdjustment: scale_up_policy['adjustment'].to_s, MetricIntervalLowerBound: 0 }]
+        })
+        Condition scaling_condition
+      end
+
+      CloudWatch_Alarm(logical_alarm_name) do
+        AlarmDescription FnJoin(' ', [Ref('EnvironmentName'), "autoscaling ecs scale up alarm"])
+        MetricName scale_up_policy['metric_name'] || default_alarm['metric_name']
+        Namespace scale_up_policy['namespace'] || default_alarm['namespace']
+        Statistic scale_up_policy['statistic'] || default_alarm['statistic']
+        Period (scale_up_policy['period'] || default_alarm['period']).to_s
+        EvaluationPeriods scale_up_policy['evaluation_periods'].to_s
+        Threshold scale_up_policy['threshold'].to_s
+        AlarmActions [Ref(logical_scaling_policy_name)]
+        ComparisonOperator 'GreaterThanThreshold'
+        Dimensions scale_up_policy['dimentions'] || default_alarm['dimentions']
+        Condition scaling_condition
+      end
+    end unless scaling_policy['up'].nil?
+
+    scaling_policy['down'].each_with_index do |scale_down_policy, i|
+      logical_scaling_policy_name = "ServiceScalingDownPolicy"  + (i > 0 ? "#{i+1}" : "")
+      logical_alarm_name          = "ServiceScaleDownAlarm"     + (i > 0 ? "#{i+1}" : "")
+      policy_name                 = "scale-down-policy"         + (i > 0 ? "-#{i+1}" : "")
+
+      ApplicationAutoScaling_ScalingPolicy(logical_scaling_policy_name) do
+        PolicyName FnJoin('-', [ Ref('EnvironmentName'), 'autoscaling', policy_name])
+        PolicyType 'StepScaling'
+        ScalingTargetId Ref(:ServiceScalingTarget)
+        StepScalingPolicyConfiguration({
+          AdjustmentType: "ChangeInCapacity",
+          Cooldown: scale_down_policy['cooldown'] || 900,
+          MetricAggregationType: "Average",
+          StepAdjustments: [{ ScalingAdjustment: scale_down_policy['adjustment'].to_s, MetricIntervalUpperBound: 0 }]
+        })
+        Condition scaling_condition
+      end
+
+      CloudWatch_Alarm(logical_alarm_name) do
+        AlarmDescription FnJoin(' ', [Ref('EnvironmentName'), "autoscaling ecs scale down alarm"])
+        MetricName scale_down_policy['metric_name'] || default_alarm['metric_name']
+        Namespace scale_down_policy['namespace'] || default_alarm['namespace']
+        Statistic scale_down_policy['statistic'] || default_alarm['statistic']
+        Period (scale_down_policy['period'] || default_alarm['period']).to_s
+        EvaluationPeriods scale_down_policy['evaluation_periods'].to_s
+        Threshold scale_down_policy['threshold'].to_s
+        AlarmActions [Ref(logical_scaling_policy_name)]
+        ComparisonOperator 'LessThanThreshold'
+        Dimensions scale_down_policy['dimentions'] || default_alarm['dimentions']
+        Condition scaling_condition
+      end
+    end unless scaling_policy['down'].nil?
+
+    scaling_policy['target'].each_with_index do |scale_target_policy, i|
+      logical_scaling_policy_name = "ServiceTargetTrackingPolicy"  + (i > 0 ? "#{i+1}" : "")
+      policy_name                 = "target-tracking-policy"       + (i > 0 ? "-#{i+1}" : "")
+
+      ApplicationAutoScaling_ScalingPolicy(logical_scaling_policy_name) do
+        PolicyName FnJoin('-', [ Ref('EnvironmentName'), 'autoscaling', policy_name])
+        PolicyType 'TargetTrackingScaling'
+        ScalingTargetId Ref(:ServiceScalingTarget)
+        TargetTrackingScalingPolicyConfiguration do
+          TargetValue scale_target_policy['target_value']
+          ScaleInCooldown scale_target_policy['scale_in_cooldown'].to_s
+          ScaleOutCooldown scale_target_policy['scale_out_cooldown'].to_s
+          PredefinedMetricSpecification do
+            PredefinedMetricType scale_target_policy['metric_type'] || 'ECSServiceAverageCPUUtilization'
+          end unless scale_target_policy['metric_type'].nil?
+          CustomizedMetricSpecification do
+            Namespace scale_target_policy['custom']['namespace']
+            MetricName scale_target_policy['custom']['metric_name']
+            Statistic scale_target_policy['custom']['statistic']
+            Unit scale_target_policy['custom']['unit'] unless scale_target_policy['custom']['unit'].nil?
+            Dimensions scale_target_policy['custom']['dimensions'] unless scale_target_policy['custom']['dimensions'].nil?
+          end unless scale_target_policy['custom'].nil?
+        end
+        Condition scaling_condition
+      end
+    end unless scaling_policy['target'].nil?
   end
 
 end
